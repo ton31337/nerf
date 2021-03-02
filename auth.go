@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"os/signal"
 	"runtime"
-	"syscall"
 	"time"
 
 	"github.com/google/go-github/github"
@@ -111,7 +110,7 @@ func Auth() {
 	}()
 
 	done := make(chan os.Signal, 1)
-	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(done, os.Interrupt)
 
 	go func() {
 		server.SetKeepAlivesEnabled(false)

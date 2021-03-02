@@ -51,6 +51,7 @@ func nebulaExecutable() string {
 	}
 }
 
+// NebulaDownload used to download Nebula binary
 func NebulaDownload() (err error) {
 	err = os.Mkdir(nebulaDir(), 0755)
 	if err != nil {
