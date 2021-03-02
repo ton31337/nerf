@@ -14,7 +14,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-const authorizedHtml = `
+const authorizedHTML = `
 <html>
 <body>
 Authorized and connected to VPN. You can close this window.
@@ -32,7 +32,7 @@ func handleAuthMain(w http.ResponseWriter, r *http.Request) {
 func handleAuthDone(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(authorizedHtml))
+	w.Write([]byte(authorizedHTML))
 	p, _ := os.FindProcess(os.Getpid())
 	p.Signal(os.Interrupt)
 }
