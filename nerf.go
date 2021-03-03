@@ -38,31 +38,29 @@ func (t *TokenSource) Token() (*oauth2.Token, error) {
 
 // GetCertificates generates ca.crt, client.crt, client.key for Nebula
 func (s *Server) GetCertificates(ctx context.Context, in *Request) (*Response, error) {
-	fmt.Printf("Got request from %s\n", *in.Login)
+	fmt.Printf("Got certificate request from %s\n", *in.Login)
 
 	originToken := &TokenSource{
 		AccessToken: *in.Token,
 	}
-	originOauthClient := oauth2.NewClient(oauth2.NoContext, originToken)
+	originOauthClient := oauth2.NewClient(context.Background(), originToken)
 	originClient := github.NewClient(originOauthClient)
-	originUser, _, _ := originClient.Users.Get(oauth2.NoContext, "")
+	originUser, _, _ := originClient.Users.Get(context.Background(), "")
 
 	if originUser != nil {
 		sudoToken := &TokenSource{
 			AccessToken: os.Getenv("OAUTH_MASTER_TOKEN"),
 		}
-		sudoOauthClient := oauth2.NewClient(oauth2.NoContext, sudoToken)
+		sudoOauthClient := oauth2.NewClient(context.Background(), sudoToken)
 		sudoClient := github.NewClient(sudoOauthClient)
 
-		teams, _, _ := sudoClient.Teams.ListTeams(oauth2.NoContext, "hostinger", nil)
+		teams, _, _ := sudoClient.Teams.ListTeams(context.Background(), "hostinger", nil)
 
-		if teams != nil {
-			for _, team := range teams {
-				users, _, _ := sudoClient.Teams.ListTeamMembers(oauth2.NoContext, *team.ID, nil)
-				for _, user := range users {
-					if *user.Login == *originUser.Login {
-						Cfg.Teams = append(Cfg.Teams, *team.Name)
-					}
+		for _, team := range teams {
+			users, _, _ := sudoClient.Teams.ListTeamMembers(context.Background(), *team.ID, nil)
+			for _, user := range users {
+				if *user.Login == *originUser.Login {
+					Cfg.Teams = append(Cfg.Teams, *team.Name)
 				}
 			}
 		}

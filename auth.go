@@ -3,6 +3,7 @@ package nerf
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -36,7 +37,9 @@ func handleAuthDone(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(authorizedHTML))
 	p, _ := os.FindProcess(os.Getpid())
-	p.Signal(os.Interrupt)
+	if err := p.Signal(os.Interrupt); err != nil {
+		log.Fatalf("Failed shutting down a web server: %s\n", err)
+	}
 }
 
 func handleAuthCallback(w http.ResponseWriter, r *http.Request) {
@@ -48,16 +51,16 @@ func handleAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	code := r.FormValue("code")
-	token, err := Cfg.OAuth.Exchange(oauth2.NoContext, code)
+	token, err := Cfg.OAuth.Exchange(context.Background(), code)
 	if err != nil {
 		fmt.Printf("OAuth Exchange() failed with '%s'\n", err)
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
 
-	oauthClient := Cfg.OAuth.Client(oauth2.NoContext, token)
+	oauthClient := Cfg.OAuth.Client(context.Background(), token)
 	client := github.NewClient(oauthClient)
-	user, _, _ := client.Users.Get(oauth2.NoContext, "")
+	user, _, _ := client.Users.Get(context.Background(), "")
 
 	Cfg.Token = token.AccessToken
 	Cfg.Login = *user.Login
@@ -108,7 +111,9 @@ func Auth() {
 
 	go func() {
 		server.SetKeepAlivesEnabled(false)
-		server.ListenAndServe()
+		if err := server.ListenAndServe(); err != nil {
+			log.Fatalf("Failed starting a web server: %s\n", err)
+		}
 	}()
 
 	fmt.Print("Your browser has been opened to visit:\n\thttp://" + Cfg.ListenAddr + "\n")
@@ -120,5 +125,7 @@ func Auth() {
 		cancel()
 	}()
 
-	server.Shutdown(ctx)
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("Web server shutdown failed: %s\n", err)
+	}
 }
