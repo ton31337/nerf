@@ -12,11 +12,12 @@ import (
 
 // Config structure
 type Config struct {
-	OAuth      *oauth2.Config
-	Token      string
-	ListenAddr string
-	Teams      []string
-	Login      string
+	OAuth       *oauth2.Config
+	Token       string
+	ListenAddr  string
+	Teams       []string
+	Login       string
+	Certificate *Certificate
 }
 
 // Server interface for Protobuf service

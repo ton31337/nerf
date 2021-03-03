@@ -33,5 +33,8 @@ func main() {
 		log.Fatalf("Failed calling remote gRPC: %s", err)
 	}
 
-	log.Printf("Response from server: \nca.crt:\n%s\nclient.crt\n%s\nclient.key:\n%s\n", *response.Ca, *response.Crt, *response.Key)
+	nerf.Cfg.Certificate = nerf.NewCertificate(*response.Ca, *response.Crt, *response.Key)
+	if err := nerf.NebulaGenerateConfig(nerf.Cfg.Certificate); err != nil {
+		log.Fatalf("Failed creating configuration file for Nebula: %s", err)
+	}
 }
