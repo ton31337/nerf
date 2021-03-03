@@ -41,6 +41,7 @@ func nebulaDir() string {
 	}
 }
 
+// NebulaExecutable show full path of Nebula executable
 func NebulaExecutable() string {
 	os := runtime.GOOS
 	switch os {
