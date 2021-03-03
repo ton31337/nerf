@@ -111,8 +111,8 @@ func Auth() {
 
 	go func() {
 		server.SetKeepAlivesEnabled(false)
-		if err := server.ListenAndServe(); err != nil {
-			log.Fatalf("Failed starting a web server: %s\n", err)
+		if err := server.ListenAndServe(); err != http.ErrServerClosed {
+			log.Fatalf("Failed starting a web server: %s", err)
 		}
 	}()
 
