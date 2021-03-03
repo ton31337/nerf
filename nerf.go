@@ -25,7 +25,7 @@ func NewNerfConfig() Config {
 		OAuth: &oauth2.Config{
 			ClientID:     os.Getenv("OAUTH_CLIENT_ID"),
 			ClientSecret: os.Getenv("OAUTH_CLIENT_SECRET"),
-			Scopes:       []string{"read:org", "repo"},
+			Scopes:       []string{"user:email", "repo"},
 			Endpoint:     githuboauth.Endpoint,
 		},
 		Organization: "Hostinger International",
