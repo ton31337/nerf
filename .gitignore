@@ -8,8 +8,8 @@
 *.dll
 *.so
 *.dylib
-main
-client
+nerf
+nerf-server
 
 # Test binary, built with `go test -c`
 *.test
