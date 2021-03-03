@@ -1,0 +1,18 @@
+syntax = "proto2";
+
+package nerf;
+
+service Server {
+    rpc GetCertificates (Request) returns (Response) {}
+}
+
+message Request {
+    required string login = 1;
+    required string token = 2;
+}
+
+message Response {
+    required string ca = 1;
+    required string crt = 2;
+    required string key = 3;
+}
