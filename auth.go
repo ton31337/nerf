@@ -11,21 +11,23 @@ import (
 	"time"
 
 	"github.com/google/go-github/github"
+	"github.com/google/uuid"
 	"golang.org/x/oauth2"
 )
 
 const authorizedHTML = `
 <html>
 <body>
-Authorized and connected to VPN. You can close this window.
+Authorized. You can close this window.
 </body>
 </html>
 `
 
 var server *http.Server
+var authCodeState = uuid.NewString()
 
 func handleAuthMain(w http.ResponseWriter, r *http.Request) {
-	url := Cfg.OAuth.AuthCodeURL(Cfg.Organization, oauth2.AccessTypeOnline)
+	url := Cfg.OAuth.AuthCodeURL(authCodeState, oauth2.AccessTypeOnline)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
@@ -39,8 +41,8 @@ func handleAuthDone(w http.ResponseWriter, r *http.Request) {
 
 func handleAuthCallback(w http.ResponseWriter, r *http.Request) {
 	state := r.FormValue("state")
-	if state != Cfg.Organization {
-		fmt.Printf("Invalid oauth state, expected '%s', got '%s'\n", Cfg.Organization, state)
+	if state != authCodeState {
+		fmt.Printf("Invalid oauth state, expected '%s', got '%s'\n", authCodeState, state)
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
@@ -48,7 +50,7 @@ func handleAuthCallback(w http.ResponseWriter, r *http.Request) {
 	code := r.FormValue("code")
 	token, err := Cfg.OAuth.Exchange(oauth2.NoContext, code)
 	if err != nil {
-		fmt.Printf("oauthConf.Exchange() failed with '%s'\n", err)
+		fmt.Printf("OAuth Exchange() failed with '%s'\n", err)
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
@@ -56,17 +58,9 @@ func handleAuthCallback(w http.ResponseWriter, r *http.Request) {
 	oauthClient := Cfg.OAuth.Client(oauth2.NoContext, token)
 	client := github.NewClient(oauthClient)
 	user, _, _ := client.Users.Get(oauth2.NoContext, "")
-	teams, _, _ := client.Teams.ListUserTeams(oauth2.NoContext, nil)
 
-	if teams != nil {
-		Cfg.Email = *user.Email
-		for _, team := range teams {
-			if *team.Organization.Name == Cfg.Organization {
-				Cfg.Teams = append(Cfg.Teams, *team.Name)
-			}
-		}
-	}
-
+	Cfg.Token = token.AccessToken
+	Cfg.Login = *user.Login
 	http.Redirect(w, r, "/done", http.StatusTemporaryRedirect)
 }
 

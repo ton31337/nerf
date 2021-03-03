@@ -3,10 +3,14 @@ package nerf
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
 	"runtime"
+	"strings"
 )
 
 func nebulaDownloadLink() string {
@@ -37,7 +41,7 @@ func nebulaDir() string {
 	}
 }
 
-func nebulaExecutable() string {
+func NebulaExecutable() string {
 	os := runtime.GOOS
 	switch os {
 	case "windows":
@@ -51,6 +55,49 @@ func nebulaExecutable() string {
 	}
 }
 
+// NebulaGenerateCertificate generate ca.crt, client.crt, client.key for Nebula
+func NebulaGenerateCertificate(groups []string, login string) (string, string, string) {
+	crtPath := "/etc/nebula/certs/" + login + ".crt"
+	keyPath := "/etc/nebula/certs/" + login + ".key"
+
+	if _, err := os.Stat(crtPath); err == nil {
+		os.Remove(crtPath)
+	}
+
+	if _, err := os.Stat(keyPath); err == nil {
+		os.Remove(keyPath)
+	}
+
+	err := exec.Command("/usr/local/bin/nebula-cert",
+		"sign", "-name", login,
+		"-out-crt", crtPath,
+		"-out-key", keyPath,
+		"-ca-crt", "/etc/nebula/certs/ca.crt",
+		"-ca-key", "/etc/nebula/certs/ca.key",
+		"-ip", "172.17.0.2/12", "-groups", strings.Join(groups, ","),
+		"-duration", "48h").Run()
+	if err != nil {
+		log.Fatalf("Failed generating certificate for Nebula: %v", err)
+	}
+
+	ca, err := ioutil.ReadFile("/etc/nebula/certs/ca.crt")
+	if err != nil {
+		log.Fatalf("Failed retrieving CA certificate: %v", err)
+	}
+
+	crt, err := ioutil.ReadFile(crtPath)
+	if err != nil {
+		log.Fatalf("Failed retrieving client certificate: %v", err)
+	}
+
+	key, err := ioutil.ReadFile(keyPath)
+	if err != nil {
+		log.Fatalf("Failed retrieving client key: %v", err)
+	}
+
+	return string(ca), string(crt), string(key)
+}
+
 // NebulaDownload used to download Nebula binary
 func NebulaDownload() (err error) {
 	err = os.Mkdir(nebulaDir(), 0755)
@@ -58,13 +105,13 @@ func NebulaDownload() (err error) {
 		return err
 	}
 
-	out, err := os.Create(nebulaExecutable())
+	out, err := os.Create(NebulaExecutable())
 	if err != nil {
 		return err
 	}
 	defer out.Close()
 
-	err = os.Chmod(nebulaExecutable(), 0755)
+	err = os.Chmod(NebulaExecutable(), 0755)
 	if err != nil {
 		return err
 	}
