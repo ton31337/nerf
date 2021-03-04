@@ -39,7 +39,11 @@ func (t *TokenSource) Token() (*oauth2.Token, error) {
 
 // GetCertificates generates ca.crt, client.crt, client.key for Nebula
 func (s *Server) GetCertificates(ctx context.Context, in *Request) (*Response, error) {
-	fmt.Printf("Got certificate request from %s\n", *in.Login)
+	if *in.Login == "" {
+		return nil, fmt.Errorf("Failed gRPC request")
+	}
+
+	fmt.Printf("Got certificate request from: %s\n", *in.Login)
 
 	originToken := &TokenSource{
 		AccessToken: *in.Token,

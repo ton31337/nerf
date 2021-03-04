@@ -37,4 +37,8 @@ func main() {
 	if err := nerf.NebulaGenerateConfig(nerf.Cfg.Certificate); err != nil {
 		log.Fatalf("Failed creating configuration file for Nebula: %s", err)
 	}
+
+	if err := nerf.NebulaStart(); err != nil {
+		log.Fatalf("Failed starting Nebula client: %s\n", err)
+	}
 }
