@@ -43,6 +43,8 @@ func (s *Server) GetCertificates(ctx context.Context, in *Request) (*Response, e
 		return nil, fmt.Errorf("Failed gRPC request")
 	}
 
+	fmt.Printf("Got certificate request from: %s\n", *in.Login)
+
 	originToken := &TokenSource{
 		AccessToken: *in.Token,
 	}
