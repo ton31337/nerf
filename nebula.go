@@ -92,13 +92,13 @@ pki:
   key: |
 {{ .Key | indent 4 }}
 static_host_map:
-  "172.16.227.213": ["1.1.1.1:4242"]
+  "172.16.209.111": ["153.92.3.153:4242"]
 
 lighthouse:
   am_lighthouse: false
   interval: 60
   hosts:
-    - 172.16.227.213
+    - 172.16.209.111
 
 listen:
   host: 0.0.0.0
