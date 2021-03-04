@@ -35,7 +35,9 @@ func handleAuthMain(w http.ResponseWriter, r *http.Request) {
 func handleAuthDone(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(authorizedHTML))
+	if _, err := w.Write([]byte(authorizedHTML)); err != nil {
+		log.Fatalf("Failed writing response to a browser: %s\n", err)
+	}
 	p, _ := os.FindProcess(os.Getpid())
 	if err := p.Signal(os.Interrupt); err != nil {
 		log.Fatalf("Failed shutting down a web server: %s\n", err)
@@ -112,7 +114,7 @@ func Auth() {
 	go func() {
 		server.SetKeepAlivesEnabled(false)
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
-			log.Fatalf("Failed starting a web server: %s", err)
+			log.Fatalf("Failed starting a web server: %s\n", err)
 		}
 	}()
 

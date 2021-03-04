@@ -10,8 +10,12 @@ ifneq "$(GOISMIN)" "1"
 $(error "go version $(GOVERSION) is not supported, upgrade to $(GOMINVERSION) or above")
 endif
 
-vet:
+check:
+	go fmt ./...
+	go fix ./...
 	go vet -v ./...
+	go mod tidy
+	golangci-lint run
 proto:
 	go build github.com/golang/protobuf/protoc-gen-go
 	PATH="$(PWD):$(PATH)" protoc --go_out=plugins=grpc:. *.proto
