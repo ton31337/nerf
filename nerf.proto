@@ -1,4 +1,5 @@
 syntax = "proto2";
+option go_package = "github.com/ton31337/nerf";
 
 package nerf;
 
