@@ -19,5 +19,8 @@ proto:
 bin:
 	go build -o ./nerf ${NERF_CMD_PATH}
 	go build -o ./nerf-server ${NERF_SERVER_CMD_PATH}
+clean:
+	rm -f ./nerf
+	rm -f ./nerf-server
 
 .DEFAULT_GOAL := bin
