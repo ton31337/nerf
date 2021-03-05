@@ -83,13 +83,12 @@ var Cfg Config
 // NewConfig initializes NerfCfg
 func NewConfig() Config {
 	return Config{
-		OAuth: &oauth2.Config{
-			ClientID:     os.Getenv("OAUTH_CLIENT_ID"),
-			ClientSecret: os.Getenv("OAUTH_CLIENT_SECRET"),
-			Scopes:       []string{"user:email"},
-			Endpoint:     githuboauth.Endpoint,
-		},
-		ListenAddr: "127.0.0.1:1337",
-		Subnet:     "172.17.0.0",
+		OAuth:       &oauth2.Config{ClientID: os.Getenv("OAUTH_CLIENT_ID"), ClientSecret: os.Getenv("OAUTH_CLIENT_SECRET"), Scopes: []string{"user:email"}, Endpoint: githuboauth.Endpoint},
+		Token:       "",
+		ListenAddr:  "127.0.0.1:1337",
+		Teams:       []string{},
+		Login:       "",
+		Certificate: &Certificate{},
+		Subnet:      "172.17.0.0",
 	}
 }

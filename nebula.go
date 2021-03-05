@@ -74,7 +74,7 @@ func NebulaExecutable() string {
 	case "darwin":
 		return path.Join(nebulaDir(), "nebula")
 	case "linux":
-		return path.Join(nebulaDir(), "nebula")
+		return path.Join("pkexec", nebulaDir(), "nebula")
 	default:
 		return ""
 	}
