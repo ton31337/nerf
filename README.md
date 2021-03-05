@@ -8,3 +8,5 @@ sequenceDiagram
     nerf->>nerf: Generate /opt/nebula/config.yml
     nerf->>nebula: Start Nebula
 ```
+
+![](/sequence.png)
