@@ -152,16 +152,16 @@ func int2NebulaIP(ip int64) string {
 	return b0 + "." + b1 + "." + b2 + "." + b3
 }
 
-func nebulaClientIP(subnet string, login string) string {
-	clientIPHash := crc.CalculateCRC(crc.CCITT, []byte(login))
-	clientIP := int64(nebulaIP2Int(subnet) + uint32(clientIPHash))
+func nebulaClientIP() string {
+	clientIPHash := crc.CalculateCRC(crc.CCITT, []byte(Cfg.Login))
+	clientIP := int64(nebulaIP2Int(Cfg.Subnet) + uint32(clientIPHash))
 	return int2NebulaIP(clientIP)
 }
 
 // NebulaGenerateCertificate generate ca.crt, client.crt, client.key for Nebula
-func NebulaGenerateCertificate(groups []string, login string) (string, string, string) {
-	crtPath := "/etc/nebula/certs/" + login + ".crt"
-	keyPath := "/etc/nebula/certs/" + login + ".key"
+func NebulaGenerateCertificate() (string, string, string) {
+	crtPath := "/etc/nebula/certs/" + Cfg.Login + ".crt"
+	keyPath := "/etc/nebula/certs/" + Cfg.Login + ".key"
 
 	if _, err := os.Stat(crtPath); err == nil {
 		os.Remove(crtPath)
@@ -172,12 +172,12 @@ func NebulaGenerateCertificate(groups []string, login string) (string, string, s
 	}
 
 	err := exec.Command("/usr/local/bin/nebula-cert",
-		"sign", "-name", login,
+		"sign", "-name", Cfg.Login,
 		"-out-crt", crtPath,
 		"-out-key", keyPath,
 		"-ca-crt", "/etc/nebula/certs/ca.crt",
 		"-ca-key", "/etc/nebula/certs/ca.key",
-		"-ip", nebulaClientIP("172.17.0.0", login)+"/12", "-groups", strings.Join(groups, ","),
+		"-ip", nebulaClientIP()+"/12", "-groups", strings.Join(Cfg.Teams, ","),
 		"-duration", "48h").Run()
 	if err != nil {
 		log.Fatalf("Failed generating certificate for Nebula: %v\n", err)

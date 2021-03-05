@@ -18,6 +18,7 @@ type Config struct {
 	Teams       []string
 	Login       string
 	Certificate *Certificate
+	Subnet      string
 }
 
 // Server interface for Protobuf service
@@ -53,6 +54,7 @@ func (s *Server) GetCertificates(ctx context.Context, in *Request) (*Response, e
 	originUser, _, _ := originClient.Users.Get(context.Background(), "")
 
 	if originUser != nil {
+		Cfg.Login = *originUser.Login
 		sudoToken := &TokenSource{
 			AccessToken: os.Getenv("OAUTH_MASTER_TOKEN"),
 		}
@@ -71,7 +73,7 @@ func (s *Server) GetCertificates(ctx context.Context, in *Request) (*Response, e
 		}
 	}
 
-	ca, crt, key := NebulaGenerateCertificate(Cfg.Teams, *originUser.Login)
+	ca, crt, key := NebulaGenerateCertificate()
 	return &Response{Crt: &crt, Ca: &ca, Key: &key}, nil
 }
 
@@ -88,5 +90,6 @@ func NewConfig() Config {
 			Endpoint:     githuboauth.Endpoint,
 		},
 		ListenAddr: "127.0.0.1:1337",
+		Subnet:     "172.17.0.0",
 	}
 }

@@ -10,6 +10,8 @@ import (
 )
 
 func main() {
+	nerf.Cfg = nerf.NewConfig()
+
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", 9000))
 	if err != nil {
 		log.Fatalf("Failed to listen: %v\n", err)
