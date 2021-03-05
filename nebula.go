@@ -1,19 +1,24 @@
 package nerf
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"path"
 	"runtime"
+	"strconv"
 	"strings"
 	"text/template"
 
 	"github.com/Masterminds/sprig"
+	"github.com/snksoft/crc"
 )
 
 // Certificate struct for certificates received from Nebula
@@ -131,6 +136,28 @@ firewall:
 	return nebulaConfigTemplate.Execute(out, cert)
 }
 
+func nebulaIP2Int(ip string) uint32 {
+	var long uint32
+	if err := binary.Read(bytes.NewBuffer(net.ParseIP(ip).To4()), binary.BigEndian, &long); err != nil {
+		log.Fatalf("Failed converting Nebula IP to integer: %s\n", err)
+	}
+	return long
+}
+
+func int2NebulaIP(ip int64) string {
+	b0 := strconv.FormatInt((ip>>24)&0xff, 10)
+	b1 := strconv.FormatInt((ip>>16)&0xff, 10)
+	b2 := strconv.FormatInt((ip>>8)&0xff, 10)
+	b3 := strconv.FormatInt((ip & 0xff), 10)
+	return b0 + "." + b1 + "." + b2 + "." + b3
+}
+
+func nebulaClientIP(subnet string, login string) string {
+	clientIPHash := crc.CalculateCRC(crc.CCITT, []byte(login))
+	clientIP := int64(nebulaIP2Int(subnet) + uint32(clientIPHash))
+	return int2NebulaIP(clientIP)
+}
+
 // NebulaGenerateCertificate generate ca.crt, client.crt, client.key for Nebula
 func NebulaGenerateCertificate(groups []string, login string) (string, string, string) {
 	crtPath := "/etc/nebula/certs/" + login + ".crt"
@@ -150,7 +177,7 @@ func NebulaGenerateCertificate(groups []string, login string) (string, string, s
 		"-out-key", keyPath,
 		"-ca-crt", "/etc/nebula/certs/ca.crt",
 		"-ca-key", "/etc/nebula/certs/ca.key",
-		"-ip", "172.17.0.2/12", "-groups", strings.Join(groups, ","),
+		"-ip", nebulaClientIP("172.17.0.0", login)+"/12", "-groups", strings.Join(groups, ","),
 		"-duration", "48h").Run()
 	if err != nil {
 		log.Fatalf("Failed generating certificate for Nebula: %v\n", err)
