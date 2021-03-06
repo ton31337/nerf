@@ -4,7 +4,7 @@ option go_package = "github.com/ton31337/nerf";
 package nerf;
 
 service Server {
-    rpc GetCertificates (Request) returns (Response) {}
+    rpc GetNebulaConfig (Request) returns (Response) {}
 }
 
 message Request {
@@ -13,7 +13,5 @@ message Request {
 }
 
 message Response {
-    required string ca = 1;
-    required string crt = 2;
-    required string key = 3;
+    required string config = 1;
 }

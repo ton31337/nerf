@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 
 	"github.com/getlantern/systray"
 	"github.com/ton31337/nerf"
@@ -35,33 +36,38 @@ func getIcon(s string) []byte {
 func onReady() {
 	systray.SetIcon(getIcon("favicon.ico"))
 	systray.SetTitle(" Hostinger VPN")
-	connect := systray.AddMenuItem("Connect", "Connect to VPN")
+	connectLT := systray.AddMenuItem("Lithuania", "Lithuania")
 	systray.AddSeparator()
 	quit := systray.AddMenuItem("Quit", "Quits this app")
 
 	go func() {
 		for {
 			select {
-			case <-connect.ClickedCh:
+			case <-connectLT.ClickedCh:
 				nerf.Auth()
 
 				conn, err := grpc.Dial(":9000", grpc.WithInsecure())
 				if err != nil {
-					log.Fatalf("Failed conneting to gRPC: %s", err)
+					log.Fatalf("Failed conneting to gRPC: %s\n", err)
 				}
 				defer conn.Close()
 
 				client := nerf.NewServerClient(conn)
 				request := &nerf.Request{Token: &nerf.Cfg.Token, Login: &nerf.Cfg.Login}
-				response, err := client.GetCertificates(context.Background(), request)
+				response, err := client.GetNebulaConfig(context.Background(), request)
 				if err != nil {
-					log.Fatalf("Failed calling remote gRPC: %s", err)
+					log.Fatalf("Failed calling remote gRPC: %s\n", err)
 				}
 
-				nerf.Cfg.Certificate = nerf.NewCertificate(*response.Ca, *response.Crt, *response.Key)
-				if err := nerf.NebulaGenerateConfig(nerf.Cfg.Certificate); err != nil {
-					log.Fatalf("Failed creating configuration file for Nebula: %s", err)
+				out, err := os.Create(path.Join(nerf.NebulaDir(), "config.yml"))
+				if err != nil {
+					log.Fatalf("Failed creating config for Nebula: %s\n", err)
 				}
+
+				if _, err := out.WriteString(*response.Config); err != nil {
+					log.Fatalf("Failed writing config for Nebula: %s\n", err)
+				}
+				defer out.Close()
 
 				if err := nerf.NebulaStart(); err != nil {
 					log.Fatalf("Failed starting Nebula client: %s\n", err)

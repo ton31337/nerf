@@ -3,7 +3,9 @@ package nerf
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
+	"path"
 
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
@@ -12,13 +14,18 @@ import (
 
 // Config structure
 type Config struct {
-	OAuth       *oauth2.Config
-	Token       string
-	ListenAddr  string
-	Teams       []string
-	Login       string
+	OAuth      *oauth2.Config
+	Token      string
+	ListenAddr string
+	Teams      []string
+	Login      string
+	Nebula     *Nebula
+}
+
+type Nebula struct {
 	Certificate *Certificate
 	Subnet      string
+	LightHouse  *LightHouse
 }
 
 // Server interface for Protobuf service
@@ -38,8 +45,8 @@ func (t *TokenSource) Token() (*oauth2.Token, error) {
 	return token, nil
 }
 
-// GetCertificates generates ca.crt, client.crt, client.key for Nebula
-func (s *Server) GetCertificates(ctx context.Context, in *Request) (*Response, error) {
+// GetNebulaConfig generates config.yml for Nebula
+func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, error) {
 	if *in.Login == "" {
 		return nil, fmt.Errorf("Failed gRPC request")
 	}
@@ -73,8 +80,18 @@ func (s *Server) GetCertificates(ctx context.Context, in *Request) (*Response, e
 		}
 	}
 
-	ca, crt, key := NebulaGenerateCertificate()
-	return &Response{Crt: &crt, Ca: &ca, Key: &key}, nil
+	out, err := os.Create(path.Join(NebulaDir(), "config.yml"))
+	if err != nil {
+		return nil, err
+	}
+	defer out.Close()
+
+	config, err := NebulaGenerateConfig()
+	if err != nil {
+		log.Fatalf("Failed creating configuration file for Nebula: %s", err)
+	}
+
+	return &Response{Config: &config}, nil
 }
 
 // Cfg is a global configuration for Nerf internals
@@ -83,12 +100,15 @@ var Cfg Config
 // NewConfig initializes NerfCfg
 func NewConfig() Config {
 	return Config{
-		OAuth:       &oauth2.Config{ClientID: os.Getenv("OAUTH_CLIENT_ID"), ClientSecret: os.Getenv("OAUTH_CLIENT_SECRET"), Scopes: []string{"user:email"}, Endpoint: githuboauth.Endpoint},
-		Token:       "",
-		ListenAddr:  "127.0.0.1:1337",
-		Teams:       []string{},
-		Login:       "",
-		Certificate: &Certificate{},
-		Subnet:      "172.17.0.0",
+		OAuth:      &oauth2.Config{ClientID: os.Getenv("OAUTH_CLIENT_ID"), ClientSecret: os.Getenv("OAUTH_CLIENT_SECRET"), Scopes: []string{"user:email"}, Endpoint: githuboauth.Endpoint},
+		Token:      "",
+		ListenAddr: "127.0.0.1:1337",
+		Teams:      []string{},
+		Login:      "",
+		Nebula: &Nebula{
+			Subnet:      "172.17.0.0/12",
+			Certificate: &Certificate{},
+			LightHouse:  &LightHouse{},
+		},
 	}
 }
