@@ -12,7 +12,7 @@ import (
 	githuboauth "golang.org/x/oauth2/github"
 )
 
-// Config structure
+// Config struct to store all the relevant data for both client and server
 type Config struct {
 	OAuth      *oauth2.Config
 	Token      string
@@ -22,6 +22,7 @@ type Config struct {
 	Nebula     *Nebula
 }
 
+// Nebula struct to store all the relevant data to generate config.yml for Nebula
 type Nebula struct {
 	Certificate *Certificate
 	Subnet      string

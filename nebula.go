@@ -21,13 +21,15 @@ import (
 	"github.com/snksoft/crc"
 )
 
-// Certificate struct for certificates received from Nebula
+// Certificate struct for certificates generated for Nebula
 type Certificate struct {
 	Ca  string
 	Crt string
 	Key string
 }
 
+// LightHouse struct to define Nebula internal (overlay) IP address,
+// and public (how to reach the real host in the mesh) IP address.
 type LightHouse struct {
 	NebulaIP string
 	PublicIP string
@@ -56,6 +58,7 @@ func nebulaDownloadLink() string {
 	}
 }
 
+// NebulaDir absolute paths to the directory of Nebula configurations and binaries
 func NebulaDir() string {
 	os := runtime.GOOS
 	switch os {
