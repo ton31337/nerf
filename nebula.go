@@ -118,7 +118,7 @@ listen:
   host: 0.0.0.0
   port: 4242
 
-local_range: 172.16.0.0/12
+local_range: {{ .Subnet }}
 
 tun:
   disabled: false
@@ -192,7 +192,7 @@ func NebulaGenerateCertificate() {
 		"-out-key", keyPath,
 		"-ca-crt", "/etc/nebula/certs/ca.crt",
 		"-ca-key", "/etc/nebula/certs/ca.key",
-		"-ip", nebulaClientIP()+nebulaSubnetLen(), "-groups", strings.Join(Cfg.Teams, ","),
+		"-ip", nebulaClientIP()+"/"+nebulaSubnetLen(), "-groups", strings.Join(Cfg.Teams, ","),
 		"-duration", "48h").Run()
 	if err != nil {
 		log.Fatalf("Failed generating certificate for Nebula: %v\n", err)
