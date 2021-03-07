@@ -118,7 +118,7 @@ func Auth() {
 		}
 	}()
 
-	fmt.Print("Your browser has been opened to visit:\n\thttp://" + Cfg.ListenAddr + "\n")
+	fmt.Printf("Your browser has been opened to visit:\n\thttp://%s\n", Cfg.ListenAddr)
 
 	<-done
 
