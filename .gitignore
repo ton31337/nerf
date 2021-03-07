@@ -8,8 +8,12 @@
 *.dll
 *.so
 *.dylib
-nerf
-nerf-server
+/nerf.exe
+/nerf-darwin
+/nerf
+/nerf-server
+/build
+/github.com
 
 # Test binary, built with `go test -c`
 *.test

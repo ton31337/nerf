@@ -10,6 +10,16 @@ ifneq "$(GOISMIN)" "1"
 $(error "go version $(GOVERSION) is not supported, upgrade to $(GOMINVERSION) or above")
 endif
 
+ALL = linux-amd64 \
+	darwin-amd64 \
+	darwin-arm64 \
+	windows-amd64
+
+all: $(ALL:%=build/%/nerf)
+build/%/nerf: .FORCE
+	GOOS=$(firstword $(subst -, , $*)) \
+		GOARCH=$(word 2, $(subst -, ,$*)) $(GOENV) \
+		go build -o $@ ${NERF_CMD_PATH}
 check:
 	go fmt ./...
 	go fix ./...
@@ -24,7 +34,9 @@ bin:
 	go build -o ./nerf ${NERF_CMD_PATH}
 	go build -o ./nerf-server ${NERF_SERVER_CMD_PATH}
 clean:
+	rm -rf ./build
 	rm -f ./nerf
 	rm -f ./nerf-server
 
+.FORCE:
 .DEFAULT_GOAL := bin
