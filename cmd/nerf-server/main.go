@@ -24,17 +24,21 @@ func main() {
 		os.Exit(1)
 	}
 
-	lightHouseNebulaIP := strings.Split(*lightHouse, ":")[0]
-	lightHousePublicIP := strings.Split(*lightHouse, ":")[1]
-
-	if err := net.ParseIP(lightHouseNebulaIP); err == nil {
-		fmt.Println("Overlay IP address is not IPv4")
+	lightHouseIPS := strings.Split(*lightHouse, ":")
+	if len(lightHouseIPS) < 2 {
+		fmt.Println("The format for lighthouse must be <NebulaIP>:<PublicIP>")
 		flag.Usage()
 		os.Exit(1)
 	}
 
-	if err := net.ParseIP(lightHousePublicIP); err == nil {
-		fmt.Println("Public IP address is not IPv4")
+	if err := net.ParseIP(lightHouseIPS[0]); err == nil {
+		fmt.Println("NebulaIP address is not IPv4")
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	if err := net.ParseIP(lightHouseIPS[1]); err == nil {
+		fmt.Println("PublicIP address is not IPv4")
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -45,8 +49,8 @@ func main() {
 	}
 
 	nerf.Cfg = nerf.NewConfig()
-	nerf.Cfg.Nebula.LightHouse.NebulaIP = lightHouseNebulaIP
-	nerf.Cfg.Nebula.LightHouse.PublicIP = lightHousePublicIP
+	nerf.Cfg.Nebula.LightHouse.NebulaIP = lightHouseIPS[0]
+	nerf.Cfg.Nebula.LightHouse.PublicIP = lightHouseIPS[1]
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", 9000))
 	if err != nil {
