@@ -11,15 +11,16 @@ $(error "go version $(GOVERSION) is not supported, upgrade to $(GOMINVERSION) or
 endif
 
 ALL = linux-amd64 \
+	windows-amd64 \
 	darwin-amd64 \
-	darwin-arm64 \
-	windows-amd64
+	darwin-arm64
 
 all: $(ALL:%=build/%/nerf)
 build/%/nerf: .FORCE
 	GOOS=$(firstword $(subst -, , $*)) \
 		GOARCH=$(word 2, $(subst -, ,$*)) $(GOENV) \
-		go build -o $@ ${NERF_CMD_PATH}
+		go build -ldflags "$(LDFLAGS)" -o $@ ${NERF_CMD_PATH}
+build/windows-%: LDFLAGS += -H=windowsgui
 check:
 	go fmt ./...
 	go fix ./...
