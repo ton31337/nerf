@@ -29,8 +29,8 @@ type Certificate struct {
 }
 
 type LightHouse struct {
-	OverlayIP string
-	PublicIP  string
+	NebulaIP string
+	PublicIP string
 }
 
 // NewCertificate stores ca.crt, client.crt, client.key
@@ -106,13 +106,13 @@ pki:
   key: |
 {{ .Certificate.Key | indent 4 }}
 static_host_map:
-  "{{ .LightHouse.OverlayIP }}": ["{{ .LightHouse.PublicIP }}:4242"]
+  "{{ .LightHouse.NebulaIP }}": ["{{ .LightHouse.PublicIP }}:4242"]
 
 lighthouse:
   am_lighthouse: false
   interval: 60
   hosts:
-    - {{ .LightHouse.OverlayIP }}
+    - {{ .LightHouse.NebulaIP }}
 
 listen:
   host: 0.0.0.0

@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	lightHouse := flag.String("lighthouse", "", "Set the lighthouse. E.g.: <OverlayIP>:<PublicIP>")
+	lightHouse := flag.String("lighthouse", "", "Set the lighthouse. E.g.: <NebulaIP>:<PublicIP>")
 	printUsage := flag.Bool("help", false, "Print command line usage")
 
 	flag.Parse()
@@ -24,10 +24,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	lightHouseOverlayIP := strings.Split(*lightHouse, ":")[0]
+	lightHouseNebulaIP := strings.Split(*lightHouse, ":")[0]
 	lightHousePublicIP := strings.Split(*lightHouse, ":")[1]
 
-	if err := net.ParseIP(lightHouseOverlayIP); err == nil {
+	if err := net.ParseIP(lightHouseNebulaIP); err == nil {
 		fmt.Println("Overlay IP address is not IPv4")
 		flag.Usage()
 		os.Exit(1)
@@ -45,7 +45,7 @@ func main() {
 	}
 
 	nerf.Cfg = nerf.NewConfig()
-	nerf.Cfg.Nebula.LightHouse.OverlayIP = lightHouseOverlayIP
+	nerf.Cfg.Nebula.LightHouse.NebulaIP = lightHouseNebulaIP
 	nerf.Cfg.Nebula.LightHouse.PublicIP = lightHousePublicIP
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", 9000))
