@@ -5,78 +5,14 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"math"
 	"net"
 	"os"
 	"path"
 	"strings"
-	"time"
 
 	"github.com/ton31337/nerf"
 	"google.golang.org/grpc"
 )
-
-func getVPNEndpoints() {
-	r := &net.Resolver{
-		PreferGo: true,
-		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-			d := net.Dialer{
-				Timeout: time.Millisecond * time.Duration(10000),
-			}
-			return d.DialContext(ctx, "udp", "1.1.1.1:53")
-		},
-	}
-
-	_, srvRecords, err := r.LookupSRV(context.Background(), "nebula", "udp", "vpn.main-hosting.eu")
-	if err != nil {
-		log.Fatalf("Failed retrieving VPN endpoinds: %s\n", err)
-	}
-
-	for _, record := range srvRecords {
-		txtRecords, err := r.LookupTXT(context.Background(), record.Target)
-		if err != nil || len(txtRecords) == 0 {
-			log.Fatalf("Failed retrieving VPN endpoinds: %s\n", err)
-		}
-		endpoint := nerf.Endpoint{
-			Description: txtRecords[0],
-			RemoteHost:  record.Target,
-			Latency:     probeEndpoint(record.Target),
-		}
-		nerf.Cfg.Endpoints[record.Target] = endpoint
-	}
-}
-
-func probeEndpoint(remoteHost string) int64 {
-	start := time.Now()
-	conn, err := grpc.Dial(remoteHost+":9000", grpc.WithInsecure())
-	if err != nil {
-		fmt.Printf("Failed connecting to gRPC (%s): %s\n", remoteHost, err)
-	}
-	defer conn.Close()
-
-	client := nerf.NewServerClient(conn)
-	data := start.UnixNano()
-	request := &nerf.PingRequest{Data: &data}
-	response, err := client.Ping(context.Background(), request)
-	if err != nil || *response.Data == 0 {
-		return math.MaxInt64
-	}
-
-	return time.Since(start).Milliseconds()
-}
-
-func getFastestEndpoint() nerf.Endpoint {
-	var fastestEndpoint nerf.Endpoint
-	var latency int64 = math.MaxInt64
-
-	for _, e := range nerf.Cfg.Endpoints {
-		if e.Latency < latency {
-			fastestEndpoint = e
-		}
-	}
-
-	return fastestEndpoint
-}
 
 func main() {
 	server := flag.Bool("server", false, "Start gRPC server to generate config for Nebula")
@@ -134,8 +70,7 @@ func main() {
 			}
 		}
 
-		getVPNEndpoints()
-		e := getFastestEndpoint()
+		e := nerf.GetFastestEndpoint()
 
 		fmt.Printf("Using fastest gRPC endpoint: %s(%s)\n", e.RemoteHost, e.Description)
 

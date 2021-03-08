@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	math "math"
+	"net"
 	"os"
 	"path"
 	"time"
@@ -11,6 +13,7 @@ import (
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
 	githuboauth "golang.org/x/oauth2/github"
+	grpc "google.golang.org/grpc"
 )
 
 // OauthMasterToken compile-time derived from -X github.com/ton31337/nerf.OauthMasterToken
@@ -108,6 +111,72 @@ func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, e
 	}
 
 	return &Response{Config: &config}, nil
+}
+
+// GetVPNEndpoints construct Endpoints map
+func GetVPNEndpoints() {
+	r := &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			d := net.Dialer{
+				Timeout: time.Millisecond * time.Duration(10000),
+			}
+			return d.DialContext(ctx, "udp", "1.1.1.1:53")
+		},
+	}
+
+	_, srvRecords, err := r.LookupSRV(context.Background(), "nebula", "udp", "vpn.main-hosting.eu")
+	if err != nil {
+		log.Fatalf("Failed retrieving VPN endpoinds: %s\n", err)
+	}
+
+	for _, record := range srvRecords {
+		txtRecords, err := r.LookupTXT(context.Background(), record.Target)
+		if err != nil || len(txtRecords) == 0 {
+			log.Fatalf("Failed retrieving VPN endpoinds: %s\n", err)
+		}
+		endpoint := Endpoint{
+			Description: txtRecords[0],
+			RemoteHost:  record.Target,
+			Latency:     probeEndpoint(record.Target),
+		}
+		Cfg.Endpoints[record.Target] = endpoint
+	}
+}
+
+func probeEndpoint(remoteHost string) int64 {
+	start := time.Now()
+	conn, err := grpc.Dial(remoteHost+":9000", grpc.WithInsecure())
+	if err != nil {
+		fmt.Printf("Failed connecting to gRPC (%s): %s\n", remoteHost, err)
+	}
+	defer conn.Close()
+
+	client := NewServerClient(conn)
+	data := start.UnixNano()
+	request := &PingRequest{Data: &data}
+	response, err := client.Ping(context.Background(), request)
+	if err != nil || *response.Data == 0 {
+		return math.MaxInt64
+	}
+
+	return time.Since(start).Milliseconds()
+}
+
+// GetFastestEndpoint returns fastest gRPC endpoint
+func GetFastestEndpoint() Endpoint {
+	GetVPNEndpoints()
+
+	var fastestEndpoint Endpoint
+	var latency int64 = math.MaxInt64
+
+	for _, e := range Cfg.Endpoints {
+		if e.Latency < latency {
+			fastestEndpoint = e
+		}
+	}
+
+	return fastestEndpoint
 }
 
 // Cfg is a global configuration for Nerf internals
