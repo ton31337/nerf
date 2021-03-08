@@ -48,7 +48,7 @@ func (s *Server) Ping(ctx context.Context, in *PingRequest) (*PingResponse, erro
 		return nil, fmt.Errorf("Failed gRPC ping request")
 	}
 
-	fmt.Printf("Got ping request from: %s\n", *in.Login)
+	fmt.Printf("%s Got ping request from: %s\n", time.Now().Format(time.RFC1123), *in.Login)
 
 	response := time.Now().Round(time.Millisecond).UnixNano() / 1e6
 	return &PingResponse{Data: &response}, nil
@@ -60,7 +60,7 @@ func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, e
 		return nil, fmt.Errorf("Failed gRPC request")
 	}
 
-	fmt.Printf("Got certificate request from: %s\n", *in.Login)
+	fmt.Printf("%s Got certificate request from: %s\n", time.Now().Format(time.RFC1123), *in.Login)
 
 	originToken := &TokenSource{
 		AccessToken: *in.Token,
