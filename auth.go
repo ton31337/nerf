@@ -27,6 +27,19 @@ Authorized. You can close this window.
 var server *http.Server
 var authCodeState = uuid.NewString()
 
+// TokenSource defines Access Token for Github
+type TokenSource struct {
+	AccessToken string
+}
+
+// Token initializes Access Token for Github
+func (t *TokenSource) Token() (*oauth2.Token, error) {
+	token := &oauth2.Token{
+		AccessToken: t.AccessToken,
+	}
+	return token, nil
+}
+
 func handleAuthMain(w http.ResponseWriter, r *http.Request) {
 	url := Cfg.OAuth.AuthCodeURL(authCodeState, oauth2.AccessTypeOnline)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)

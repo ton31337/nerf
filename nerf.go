@@ -42,19 +42,6 @@ type Endpoint struct {
 	Latency     int64
 }
 
-// TokenSource defines Access Token for Github
-type TokenSource struct {
-	AccessToken string
-}
-
-// Token initializes Access Token for Github
-func (t *TokenSource) Token() (*oauth2.Token, error) {
-	token := &oauth2.Token{
-		AccessToken: t.AccessToken,
-	}
-	return token, nil
-}
-
 // Ping get timestamp in milliseconds
 func (s *Server) Ping(ctx context.Context, in *PingRequest) (*PingResponse, error) {
 	if *in.Data == 0 {
