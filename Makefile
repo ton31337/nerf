@@ -1,6 +1,5 @@
 GOMINVERSION = 1.16
 NERF_CMD_PATH = "./cmd/nerf"
-NERF_SERVER_CMD_PATH = "./cmd/nerf-server"
 GO111MODULE = on
 export GO111MODULE
 
@@ -33,11 +32,9 @@ proto:
 	rm protoc-gen-go
 bin:
 	go build -o ./nerf ${NERF_CMD_PATH}
-	go build -o ./nerf-server ${NERF_SERVER_CMD_PATH}
 clean:
 	rm -rf ./build
 	rm -f ./nerf
-	rm -f ./nerf-server
 
 .FORCE:
 .DEFAULT_GOAL := bin
