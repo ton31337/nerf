@@ -94,7 +94,7 @@ func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, e
 
 	config, err := NebulaGenerateConfig()
 	if err != nil {
-		log.Fatalf("Failed creating configuration file for Nebula: %s", err)
+		log.Fatalf("Failed creating configuration file for Nebula: %s\n", err)
 	}
 
 	return &Response{Config: &config}, nil
@@ -114,13 +114,13 @@ func GetVPNEndpoints() {
 
 	_, srvRecords, err := r.LookupSRV(context.Background(), "nebula", "udp", "vpn.main-hosting.eu")
 	if err != nil {
-		log.Fatalf("Failed retrieving VPN endpoinds: %s\n", err)
+		log.Fatalf("Failed retrieving VPN endpoints: %s\n", err)
 	}
 
 	for _, record := range srvRecords {
 		txtRecords, err := r.LookupTXT(context.Background(), record.Target)
 		if err != nil || len(txtRecords) == 0 {
-			log.Fatalf("Failed retrieving VPN endpoinds: %s\n", err)
+			log.Fatalf("Failed retrieving VPN endpoints: %s\n", err)
 		}
 		endpoint := Endpoint{
 			Description: txtRecords[0],
