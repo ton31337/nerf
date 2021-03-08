@@ -12,7 +12,7 @@ import (
 	githuboauth "golang.org/x/oauth2/github"
 )
 
-// OauthMasterToken compile-time derived from -X main.OauthMasterToken
+// OauthMasterToken compile-time derived from -X github.com/ton31337/nerf.OauthMasterToken
 var OauthMasterToken string
 
 // Config struct to store all the relevant data for both client and server
@@ -94,9 +94,9 @@ func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, e
 // Cfg is a global configuration for Nerf internals
 var Cfg Config
 
-// OauthClientID compile-time derived from -X main.OauthClientID
+// OauthClientID compile-time derived from -X github.com/ton31337/nerf.OauthClientID
 var OauthClientID string
-// OauthClientSecret compile-time derived from -X main.OauthClientSecret
+// OauthClientSecret compile-time derived from -X github.com/ton31337/nerf.OauthClientSecret
 var OauthClientSecret string
 
 // NewConfig initializes NerfCfg
