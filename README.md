@@ -11,9 +11,19 @@ sequenceDiagram
 
 ![](/sequence.png)
 
-#### Start a gRPC server
+## Compile
+
+```
+export OAUTH_CLIENT_ID=<clientID>
+export OAUTH_CLIENT_SECRET=<clientSecret>
+export OAUTH_MASTER_TOKEN=<masterToken>
+make all # For multiple ARCHs
+make # For Linux amd64 only
+```
+
+## Start a gRPC server
 
 The server is needed to generate config.yml for Nebula. To start a server type:
 ```
-OAUTH_MASTER_TOKEN=<token> ./nerf -server -lighthouse 172.16.0.1:193.219.12.13
+./nerf -server -lighthouse 172.16.0.1:193.219.12.13
 ```
