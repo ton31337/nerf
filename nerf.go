@@ -96,6 +96,7 @@ var Cfg Config
 
 // OauthClientID compile-time derived from -X github.com/ton31337/nerf.OauthClientID
 var OauthClientID string
+
 // OauthClientSecret compile-time derived from -X github.com/ton31337/nerf.OauthClientSecret
 var OauthClientSecret string
 
