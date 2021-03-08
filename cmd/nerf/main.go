@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math"
 	"net"
 	"os"
 	"path"
@@ -58,7 +59,7 @@ func probeEndpoint(remoteHost string) int64 {
 	request := &nerf.PingRequest{Data: &data}
 	response, err := client.Ping(context.Background(), request)
 	if err != nil || *response.Data == 0 {
-		log.Fatalf("Failed calling remote gRPC: %s\n", err)
+		return math.MaxInt64
 	}
 
 	return time.Since(start).Milliseconds()
@@ -66,7 +67,7 @@ func probeEndpoint(remoteHost string) int64 {
 
 func getFastestEndpoint() nerf.Endpoint {
 	var fastestEndpoint nerf.Endpoint
-	var latency int64 = 999999
+	var latency int64 = math.MaxInt64
 
 	for _, e := range nerf.Cfg.Endpoints {
 		if e.Latency < latency {
@@ -135,6 +136,8 @@ func main() {
 
 		getVPNEndpoints()
 		e := getFastestEndpoint()
+
+		fmt.Printf("Using fastest gRPC endpoint: %s(%s)\n", e.RemoteHost, e.Description)
 
 		nerf.Auth()
 
