@@ -12,6 +12,9 @@ import (
 	githuboauth "golang.org/x/oauth2/github"
 )
 
+// OauthMasterToken compile-time derived from -X main.OauthMasterToken
+var OauthMasterToken string
+
 // Config struct to store all the relevant data for both client and server
 type Config struct {
 	OAuth      *oauth2.Config
@@ -20,13 +23,6 @@ type Config struct {
 	Teams      []string
 	Login      string
 	Nebula     *Nebula
-}
-
-// Nebula struct to store all the relevant data to generate config.yml for Nebula
-type Nebula struct {
-	Certificate *Certificate
-	Subnet      string
-	LightHouse  *LightHouse
 }
 
 // Server interface for Protobuf service
@@ -64,7 +60,7 @@ func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, e
 	if originUser != nil {
 		Cfg.Login = *originUser.Login
 		sudoToken := &TokenSource{
-			AccessToken: os.Getenv("OAUTH_MASTER_TOKEN"),
+			AccessToken: OauthMasterToken,
 		}
 		sudoOauthClient := oauth2.NewClient(context.Background(), sudoToken)
 		sudoClient := github.NewClient(sudoOauthClient)
@@ -98,10 +94,15 @@ func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, e
 // Cfg is a global configuration for Nerf internals
 var Cfg Config
 
+// OauthClientID compile-time derived from -X main.OauthClientID
+var OauthClientID string
+// OauthClientSecret compile-time derived from -X main.OauthClientSecret
+var OauthClientSecret string
+
 // NewConfig initializes NerfCfg
 func NewConfig() Config {
 	return Config{
-		OAuth:      &oauth2.Config{ClientID: os.Getenv("OAUTH_CLIENT_ID"), ClientSecret: os.Getenv("OAUTH_CLIENT_SECRET"), Scopes: []string{"user:email"}, Endpoint: githuboauth.Endpoint},
+		OAuth:      &oauth2.Config{ClientID: OauthClientID, ClientSecret: OauthClientSecret, Scopes: []string{"user:email"}, Endpoint: githuboauth.Endpoint},
 		Token:      "",
 		ListenAddr: "127.0.0.1:1337",
 		Teams:      []string{},

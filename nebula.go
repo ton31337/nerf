@@ -35,6 +35,13 @@ type LightHouse struct {
 	PublicIP string
 }
 
+// Nebula struct to store all the relevant data to generate config.yml for Nebula
+type Nebula struct {
+	Certificate *Certificate
+	Subnet      string
+	LightHouse  *LightHouse
+}
+
 // NewCertificate stores ca.crt, client.crt, client.key
 func NewCertificate(Ca string, Crt string, Key string) *Certificate {
 	return &Certificate{

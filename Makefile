@@ -9,6 +9,10 @@ ifneq "$(GOISMIN)" "1"
 $(error "go version $(GOVERSION) is not supported, upgrade to $(GOMINVERSION) or above")
 endif
 
+LDFLAGS = -X github.com/ton31337/nerf.OauthClientID=$(OAUTH_CLIENT_ID) \
+		-X github.com/ton31337/nerf.OauthClientSecret=$(OAUTH_CLIENT_SECRET) \
+		-X github.com/ton31337/nerf.OauthMasterToken=$(OAUTH_MASTER_TOKEN)
+
 ALL = linux-amd64 \
 	windows-amd64 \
 	darwin-amd64 \
@@ -31,7 +35,7 @@ proto:
 	PATH="$(PWD):$(PATH)" protoc --go_out=plugins=grpc:. *.proto
 	rm protoc-gen-go
 bin:
-	go build -o ./nerf ${NERF_CMD_PATH}
+	go build -ldflags "$(LDFLAGS)" -o ./nerf ${NERF_CMD_PATH}
 clean:
 	rm -rf ./build
 	rm -f ./nerf
