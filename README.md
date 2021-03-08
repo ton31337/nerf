@@ -27,3 +27,9 @@ The server is needed to generate config.yml for Nebula. To start a server type:
 ```
 ./nerf -server -lighthouse 172.16.0.1:193.219.12.13
 ```
+
+## Start a client
+
+```
+./nerf
+```
