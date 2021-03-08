@@ -53,14 +53,14 @@ func main() {
 
 		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", 9000))
 		if err != nil {
-			log.Fatalf("Failed to listen: %v\n", err)
+			log.Fatalf("Failed to listen gRPC server: %v\n", err)
 		}
 
 		grpcServer := grpc.NewServer()
 		nerf.RegisterServerServer(grpcServer, &nerf.Server{})
 
 		if err := grpcServer.Serve(lis); err != nil {
-			log.Fatalf("Failed to serve: %v\n", err)
+			log.Fatalf("Failed to serve gRPC server: %v\n", err)
 		}
 	} else {
 		err := nerf.NebulaDownload()
