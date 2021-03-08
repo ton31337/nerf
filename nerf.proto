@@ -5,6 +5,15 @@ package nerf;
 
 service Server {
     rpc GetNebulaConfig (Request) returns (Response) {}
+    rpc Ping (PingRequest) returns (PingResponse) {}
+}
+
+message PingRequest {
+    required int64 data = 1;
+}
+
+message PingResponse {
+    required int64 data = 1;
 }
 
 message Request {

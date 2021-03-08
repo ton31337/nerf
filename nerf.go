@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"time"
 
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
@@ -23,10 +24,19 @@ type Config struct {
 	Teams      []string
 	Login      string
 	Nebula     *Nebula
+	Endpoints  map[string]Endpoint
 }
 
 // Server interface for Protobuf service
 type Server struct {
+}
+
+// Endpoint struct to store all the relevant data about gRPC server,
+// which generates and returns data for Nebula.
+type Endpoint struct {
+	Description string
+	RemoteHost  string
+	Latency     int64
 }
 
 // TokenSource defines Access Token for Github
@@ -40,6 +50,15 @@ func (t *TokenSource) Token() (*oauth2.Token, error) {
 		AccessToken: t.AccessToken,
 	}
 	return token, nil
+}
+
+// Ping get timestamp in milliseconds
+func (s *Server) Ping(ctx context.Context, in *PingRequest) (*PingResponse, error) {
+	if *in.Data == 0 {
+		return nil, fmt.Errorf("Failed gRPC ping request")
+	}
+	response := time.Now().Round(time.Millisecond).UnixNano() / 1e6
+	return &PingResponse{Data: &response}, nil
 }
 
 // GetNebulaConfig generates config.yml for Nebula
@@ -113,5 +132,6 @@ func NewConfig() Config {
 			Certificate: &Certificate{},
 			LightHouse:  &LightHouse{},
 		},
+		Endpoints: map[string]Endpoint{},
 	}
 }

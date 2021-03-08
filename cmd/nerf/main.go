@@ -4,75 +4,77 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
 	"path"
 	"strings"
+	"time"
 
-	"github.com/getlantern/systray"
 	"github.com/ton31337/nerf"
 	"google.golang.org/grpc"
 )
 
-func getIcon(s string) []byte {
-	b, err := ioutil.ReadFile(s)
-	if err != nil {
-		fmt.Print(err)
-	}
-	return b
-}
-
-func onReady() {
-	systray.SetIcon(getIcon("favicon.ico"))
-	systray.SetTitle(" Hostinger VPN")
-	connectLT := systray.AddMenuItem("Lithuania", "Lithuania")
-	systray.AddSeparator()
-	quit := systray.AddMenuItem("Quit", "Quits this app")
-
-	go func() {
-		for {
-			select {
-			case <-connectLT.ClickedCh:
-				nerf.Auth()
-
-				conn, err := grpc.Dial(":9000", grpc.WithInsecure())
-				if err != nil {
-					log.Fatalf("Failed conneting to gRPC: %s\n", err)
-				}
-				defer conn.Close()
-
-				client := nerf.NewServerClient(conn)
-				request := &nerf.Request{Token: &nerf.Cfg.Token, Login: &nerf.Cfg.Login}
-				response, err := client.GetNebulaConfig(context.Background(), request)
-				if err != nil {
-					log.Fatalf("Failed calling remote gRPC: %s\n", err)
-				}
-
-				out, err := os.Create(path.Join(nerf.NebulaDir(), "config.yml"))
-				if err != nil {
-					log.Fatalf("Failed creating config for Nebula: %s\n", err)
-				}
-
-				if _, err := out.WriteString(*response.Config); err != nil {
-					log.Fatalf("Failed writing config for Nebula: %s\n", err)
-				}
-				defer out.Close()
-
-				if err := nerf.NebulaStart(); err != nil {
-					log.Fatalf("Failed starting Nebula client: %s\n", err)
-				}
-			case <-quit.ClickedCh:
-				systray.Quit()
-				os.Exit(0)
-				return
+func getVPNEndpoints() {
+	r := &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			d := net.Dialer{
+				Timeout: time.Millisecond * time.Duration(10000),
 			}
+			return d.DialContext(ctx, "udp", "1.1.1.1:53")
+		},
+	}
+
+	_, srvRecords, err := r.LookupSRV(context.Background(), "nebula", "udp", "vpn.main-hosting.eu")
+	if err != nil {
+		log.Fatalf("Failed retrieving VPN endpoinds: %s\n", err)
+	}
+
+	for _, record := range srvRecords {
+		txtRecords, err := r.LookupTXT(context.Background(), record.Target)
+		if err != nil || len(txtRecords) == 0 {
+			log.Fatalf("Failed retrieving VPN endpoinds: %s\n", err)
 		}
-	}()
+		endpoint := nerf.Endpoint{
+			Description: txtRecords[0],
+			RemoteHost:  record.Target,
+			Latency:     probeEndpoint(record.Target),
+		}
+		nerf.Cfg.Endpoints[record.Target] = endpoint
+	}
 }
 
-func onExit() {
+func probeEndpoint(remoteHost string) int64 {
+	start := time.Now()
+	conn, err := grpc.Dial(remoteHost+":9000", grpc.WithInsecure())
+	if err != nil {
+		fmt.Printf("Failed connecting to gRPC (%s): %s\n", remoteHost, err)
+	}
+	defer conn.Close()
+
+	client := nerf.NewServerClient(conn)
+	data := start.UnixNano()
+	request := &nerf.PingRequest{Data: &data}
+	response, err := client.Ping(context.Background(), request)
+	if err != nil || *response.Data == 0 {
+		log.Fatalf("Failed calling remote gRPC: %s\n", err)
+	}
+
+	return time.Since(start).Milliseconds()
+}
+
+func getFastestEndpoint() nerf.Endpoint {
+	var fastestEndpoint nerf.Endpoint
+	var latency int64 = 999999
+
+	for _, e := range nerf.Cfg.Endpoints {
+		if e.Latency < latency {
+			fastestEndpoint = e
+		}
+	}
+
+	return fastestEndpoint
 }
 
 func main() {
@@ -131,7 +133,37 @@ func main() {
 			}
 		}
 
-		systray.Run(onReady, onExit)
+		getVPNEndpoints()
+		e := getFastestEndpoint()
+
+		nerf.Auth()
+
+		conn, err := grpc.Dial(e.RemoteHost+":9000", grpc.WithInsecure())
+		if err != nil {
+			log.Fatalf("Failed conneting to gRPC %s(%s): %s\n", e.RemoteHost, e.Description, err)
+		}
+		defer conn.Close()
+
+		client := nerf.NewServerClient(conn)
+		request := &nerf.Request{Token: &nerf.Cfg.Token, Login: &nerf.Cfg.Login}
+		response, err := client.GetNebulaConfig(context.Background(), request)
+		if err != nil {
+			log.Fatalf("Failed calling remote gRPC %s(%s): %s\n", e.RemoteHost, e.Description, err)
+		}
+
+		out, err := os.Create(path.Join(nerf.NebulaDir(), "config.yml"))
+		if err != nil {
+			log.Fatalf("Failed creating config for Nebula: %s\n", err)
+		}
+
+		if _, err := out.WriteString(*response.Config); err != nil {
+			log.Fatalf("Failed writing config for Nebula: %s\n", err)
+		}
+		defer out.Close()
+
+		if err := nerf.NebulaStart(); err != nil {
+			log.Fatalf("Failed starting Nebula client: %s\n", err)
+		}
 	}
 
 	if *printUsage {
