@@ -70,11 +70,15 @@ func main() {
 			}
 		}
 
+		nerf.Auth()
+
 		e := nerf.GetFastestEndpoint()
 
+		if e.RemoteHost == "" {
+			log.Fatalln("No available gRPC endpoints found")
+		}
+		fmt.Printf("Authorized as: %s\n", nerf.Cfg.Login)
 		fmt.Printf("Using fastest gRPC endpoint: %s(%s)\n", e.RemoteHost, e.Description)
-
-		nerf.Auth()
 
 		conn, err := grpc.Dial(e.RemoteHost+":9000", grpc.WithInsecure())
 		if err != nil {

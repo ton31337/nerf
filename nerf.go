@@ -44,9 +44,12 @@ type Endpoint struct {
 
 // Ping get timestamp in milliseconds
 func (s *Server) Ping(ctx context.Context, in *PingRequest) (*PingResponse, error) {
-	if *in.Data == 0 {
+	if *in.Login == "" {
 		return nil, fmt.Errorf("Failed gRPC ping request")
 	}
+
+	fmt.Printf("Got ping request from: %s\n", *in.Login)
+
 	response := time.Now().Round(time.Millisecond).UnixNano() / 1e6
 	return &PingResponse{Data: &response}, nil
 }
@@ -100,6 +103,25 @@ func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, e
 	return &Response{Config: &config}, nil
 }
 
+func probeEndpoint(remoteHost string) int64 {
+	start := time.Now()
+	conn, err := grpc.Dial(remoteHost+":9000", grpc.WithInsecure())
+	if err != nil {
+		fmt.Printf("Failed connecting to gRPC (%s): %s\n", remoteHost, err)
+	}
+	defer conn.Close()
+
+	client := NewServerClient(conn)
+	data := start.UnixNano()
+	request := &PingRequest{Data: &data, Login: &Cfg.Login}
+	response, err := client.Ping(context.Background(), request)
+	if err != nil || *response.Data == 0 {
+		return math.MaxInt64
+	}
+
+	return time.Since(start).Milliseconds()
+}
+
 // GetVPNEndpoints construct Endpoints map
 func GetVPNEndpoints() {
 	r := &net.Resolver{
@@ -129,25 +151,6 @@ func GetVPNEndpoints() {
 		}
 		Cfg.Endpoints[record.Target] = endpoint
 	}
-}
-
-func probeEndpoint(remoteHost string) int64 {
-	start := time.Now()
-	conn, err := grpc.Dial(remoteHost+":9000", grpc.WithInsecure())
-	if err != nil {
-		fmt.Printf("Failed connecting to gRPC (%s): %s\n", remoteHost, err)
-	}
-	defer conn.Close()
-
-	client := NewServerClient(conn)
-	data := start.UnixNano()
-	request := &PingRequest{Data: &data}
-	response, err := client.Ping(context.Background(), request)
-	if err != nil || *response.Data == 0 {
-		return math.MaxInt64
-	}
-
-	return time.Since(start).Milliseconds()
 }
 
 // GetFastestEndpoint returns fastest gRPC endpoint
