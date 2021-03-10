@@ -5,6 +5,7 @@ import (
 	"path"
 
 	"github.com/vishvananda/netlink"
+	"go.uber.org/zap"
 )
 
 func nebulaDownloadLink() string {
@@ -25,6 +26,9 @@ func NebulaExecutable() string {
 func NebulaAddLightHouseStaticRoute(e *Endpoint) error {
 	routes, err := netlink.RouteGet(net.ParseIP(e.RemoteIP))
 	if err != nil {
+		Cfg.Logger.Error("Can't get route for gRPC server",
+			zap.String("RemoteIP", e.RemoteIP),
+			zap.Error(err))
 		return err
 	}
 
@@ -40,10 +44,16 @@ func NebulaAddLightHouseStaticRoute(e *Endpoint) error {
 	}
 
 	if err := netlink.RouteDel(&nr); err != nil {
+		Cfg.Logger.Error("Can't delete a static route for gRPC server",
+			zap.String("RemoteIP", e.RemoteIP),
+			zap.Error(err))
 		return err
 	}
 
 	if err := netlink.RouteAdd(&nr); err != nil {
+		Cfg.Logger.Error("Can't create a static route for gRPC server",
+			zap.String("RemoteIP", e.RemoteIP),
+			zap.Error(err))
 		return err
 	}
 

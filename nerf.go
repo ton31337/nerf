@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/go-github/github"
+	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	githuboauth "golang.org/x/oauth2/github"
 	grpc "google.golang.org/grpc"
@@ -19,6 +20,7 @@ var OauthMasterToken string
 
 // Config struct to store all the relevant data for both client and server
 type Config struct {
+	Logger     *zap.Logger
 	OAuth      *oauth2.Config
 	Token      string
 	ListenAddr string
@@ -26,6 +28,7 @@ type Config struct {
 	Login      string
 	Nebula     *Nebula
 	Endpoints  map[string]Endpoint
+	Debug      bool
 }
 
 // Server interface for Protobuf service
@@ -47,7 +50,9 @@ func (s *Server) Ping(ctx context.Context, in *PingRequest) (*PingResponse, erro
 		return nil, fmt.Errorf("Failed gRPC ping request")
 	}
 
-	fmt.Printf("%s Got ping request from: %s\n", time.Now().Format(time.RFC1123), *in.Login)
+	if Cfg.Debug {
+		Cfg.Logger.Info("Got ping request", zap.String("Login", *in.Login))
+	}
 
 	response := time.Now().Round(time.Millisecond).UnixNano() / 1e6
 	return &PingResponse{Data: &response}, nil
@@ -56,10 +61,12 @@ func (s *Server) Ping(ctx context.Context, in *PingRequest) (*PingResponse, erro
 // GetNebulaConfig generates config.yml for Nebula
 func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, error) {
 	if *in.Login == "" {
-		return nil, fmt.Errorf("Failed gRPC request")
+		return nil, fmt.Errorf("Failed gRPC certificate request")
 	}
 
-	fmt.Printf("%s Got certificate request from: %s\n", time.Now().Format(time.RFC1123), *in.Login)
+	if Cfg.Debug {
+		Cfg.Logger.Info("Got certificate request", zap.String("Login", *in.Login))
+	}
 
 	originToken := &TokenSource{
 		AccessToken: *in.Token,
@@ -100,7 +107,9 @@ func probeEndpoint(remoteHost string) int64 {
 	start := time.Now()
 	conn, err := grpc.Dial(remoteHost+":9000", grpc.WithInsecure())
 	if err != nil {
-		fmt.Printf("Failed connecting to gRPC (%s): %s\n", remoteHost, err)
+		Cfg.Logger.Error("Failed connecting to gRPC",
+			zap.String("RemoteHost", remoteHost),
+			zap.Error(err))
 	}
 	defer conn.Close()
 
@@ -179,6 +188,7 @@ var OauthClientSecret string
 // NewConfig initializes NerfCfg
 func NewConfig() Config {
 	return Config{
+		Logger:     &zap.Logger{},
 		OAuth:      &oauth2.Config{ClientID: OauthClientID, ClientSecret: OauthClientSecret, Scopes: []string{"user:email"}, Endpoint: githuboauth.Endpoint},
 		Token:      "",
 		ListenAddr: "127.0.0.1:1337",
@@ -190,5 +200,6 @@ func NewConfig() Config {
 			LightHouse:  &LightHouse{},
 		},
 		Endpoints: map[string]Endpoint{},
+		Debug:     false,
 	}
 }

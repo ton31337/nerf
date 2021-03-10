@@ -18,6 +18,7 @@ import (
 
 	"github.com/Masterminds/sprig"
 	"github.com/snksoft/crc"
+	"go.uber.org/zap"
 )
 
 // Certificate struct for certificates generated for Nebula
@@ -197,17 +198,26 @@ func NebulaDownload() (err error) {
 
 	out, err := os.Create(NebulaExecutable())
 	if err != nil {
+		Cfg.Logger.Error("Can't create Nebula binary",
+			zap.String("Path", NebulaExecutable()),
+			zap.Error(err))
 		return err
 	}
 	defer out.Close()
 
 	err = os.Chmod(NebulaExecutable(), 0755)
 	if err != nil {
+		Cfg.Logger.Error("Can't change permissions for Nebula binary",
+			zap.String("Path", NebulaExecutable()),
+			zap.Error(err))
 		return err
 	}
 
 	resp, err := http.Get(nebulaDownloadLink())
 	if err != nil {
+		Cfg.Logger.Error("Can't download Nebula binary",
+			zap.String("Url", nebulaDownloadLink()),
+			zap.Error(err))
 		return err
 	}
 	defer resp.Body.Close()
@@ -218,6 +228,10 @@ func NebulaDownload() (err error) {
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
+		Cfg.Logger.Error("Can't write Nebula binary",
+			zap.String("Url", nebulaDownloadLink()),
+			zap.String("Path", NebulaExecutable()),
+			zap.Error(err))
 		return err
 	}
 

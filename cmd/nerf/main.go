@@ -11,16 +11,30 @@ import (
 	"strings"
 
 	"github.com/ton31337/nerf"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
 func main() {
 	server := flag.Bool("server", false, "Start gRPC server to generate config for Nebula")
 	lightHouse := flag.String("lighthouse", "", "Set the lighthouse. E.g.: <NebulaIP>:<PublicIP>")
+	debug := flag.Bool("debug", false, "Print verbose output")
 	printUsage := flag.Bool("help", false, "Print command line usage")
 
 	flag.Parse()
 	nerf.Cfg = nerf.NewConfig()
+
+	logger, _ := zap.NewProduction()
+	nerf.Cfg.Logger = logger
+	defer func() {
+		if err := nerf.Cfg.Logger.Sync(); err != nil {
+			log.Fatalln("Failed Logger sync")
+		}
+	}()
+
+	if *debug {
+		nerf.Cfg.Debug = true
+	}
 
 	if *server {
 		if *lightHouse == "" {
@@ -82,8 +96,14 @@ func main() {
 		if e.RemoteHost == "" {
 			log.Fatalln("No available gRPC endpoints found")
 		}
-		fmt.Printf("Authorized as: %s\n", nerf.Cfg.Login)
-		fmt.Printf("Using fastest gRPC endpoint: %s(%s)\n", e.RemoteHost, e.Description)
+
+		if nerf.Cfg.Debug {
+			nerf.Cfg.Logger.Info("Authorized", zap.String("Login", nerf.Cfg.Login))
+			nerf.Cfg.Logger.Info("Using fastest gRPC endpoint",
+				zap.String("RemoteIP", e.RemoteIP),
+				zap.String("RemoteHost", e.RemoteHost),
+				zap.String("Description", e.Description))
+		}
 
 		conn, err := grpc.Dial(e.RemoteHost+":9000", grpc.WithInsecure())
 		if err != nil {
