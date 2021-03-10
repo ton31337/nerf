@@ -11,8 +11,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path"
-	"runtime"
 	"strconv"
 	"strings"
 	"text/template"
@@ -49,55 +47,6 @@ func NewCertificate(Ca string, Crt string, Key string) *Certificate {
 		Crt: Crt,
 		Key: Key,
 	}
-}
-
-func nebulaDownloadLink() string {
-	os := runtime.GOOS
-	switch os {
-	case "windows":
-		return "https://github.com/hostinger/packages/releases/download/v1.0.0/nebula-1.3.0-windows-amd64"
-	case "darwin":
-		return "https://github.com/hostinger/packages/releases/download/v1.0.0/nebula-1.3.0-darwin-amd64"
-	case "linux":
-		return "https://github.com/hostinger/packages/releases/download/v1.0.0/nebula-1.3.0-linux-amd64"
-	default:
-		return ""
-	}
-}
-
-// NebulaDir absolute paths to the directory of Nebula configurations and binaries
-func NebulaDir() string {
-	os := runtime.GOOS
-	switch os {
-	case "windows":
-		return "C:/Nebula"
-	case "darwin":
-		return "/opt/nebula"
-	case "linux":
-		return "/opt/nebula"
-	default:
-		return ""
-	}
-}
-
-// NebulaExecutable show full path of Nebula executable
-func NebulaExecutable() string {
-	os := runtime.GOOS
-	switch os {
-	case "windows":
-		return path.Join(NebulaDir(), "nebula.exe")
-	case "darwin":
-		return path.Join(NebulaDir(), "nebula")
-	case "linux":
-		return path.Join(NebulaDir(), "nebula")
-	default:
-		return ""
-	}
-}
-
-// NebulaStart starts Nebula instance in foreground
-func NebulaStart() error {
-	return exec.Command("pkexec", NebulaExecutable(), "-config", path.Join(NebulaDir(), "config.yml")).Run()
 }
 
 // NebulaGenerateConfig generate config.yml
