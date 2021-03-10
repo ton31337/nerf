@@ -2,7 +2,6 @@ package nerf
 
 import (
 	"net"
-	"os/exec"
 	"path"
 
 	"github.com/vishvananda/netlink"
@@ -20,11 +19,6 @@ func NebulaDir() string {
 // NebulaExecutable show full path of Nebula executable
 func NebulaExecutable() string {
 	return path.Join(NebulaDir(), "nebula")
-}
-
-// NebulaStart starts Nebula instance in foreground
-func NebulaStart() error {
-	return exec.Command(NebulaExecutable(), "-config", path.Join(NebulaDir(), "config.yml")).Run()
 }
 
 // NebulaAddLightHouseStaticRoute add static route towards fastest gRPC server via default route

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"strconv"
 	"strings"
 	"text/template"
@@ -47,6 +48,11 @@ func NewCertificate(Ca string, Crt string, Key string) *Certificate {
 		Crt: Crt,
 		Key: Key,
 	}
+}
+
+// NebulaStart starts Nebula instance in foreground
+func NebulaStart() error {
+	return exec.Command(NebulaExecutable(), "-config", path.Join(NebulaDir(), "config.yml")).Run()
 }
 
 // NebulaGenerateConfig generate config.yml
