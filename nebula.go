@@ -201,7 +201,7 @@ func NebulaGenerateCertificate() {
 		os.Remove(keyPath)
 	}
 
-	err := exec.Command("/usr/local/bin/nebula-cert",
+	err := exec.Command("/usr/local/nebula/nebula-cert",
 		"sign", "-name", Cfg.Login,
 		"-out-crt", crtPath,
 		"-out-key", keyPath,
