@@ -18,7 +18,7 @@ import (
 func main() {
 	server := flag.Bool("server", false, "Start gRPC server to generate config for Nebula")
 	lightHouse := flag.String("lighthouse", "", "Set the lighthouse. E.g.: <NebulaIP>:<PublicIP>")
-	debug := flag.Bool("debug", false, "Print verbose output")
+	verbose := flag.Bool("verbose", false, "Print verbose output")
 	printUsage := flag.Bool("help", false, "Print command line usage")
 
 	flag.Parse()
@@ -32,8 +32,8 @@ func main() {
 		}
 	}()
 
-	if *debug {
-		nerf.Cfg.Debug = true
+	if *verbose {
+		nerf.Cfg.Verbose = true
 	}
 
 	if *server {
@@ -97,7 +97,7 @@ func main() {
 			log.Fatalln("No available gRPC endpoints found")
 		}
 
-		if nerf.Cfg.Debug {
+		if nerf.Cfg.Verbose {
 			nerf.Cfg.Logger.Info("Authorized", zap.String("Login", nerf.Cfg.Login))
 			nerf.Cfg.Logger.Info("Using fastest gRPC endpoint",
 				zap.String("RemoteIP", e.RemoteIP),

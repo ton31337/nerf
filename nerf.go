@@ -28,7 +28,7 @@ type Config struct {
 	Login      string
 	Nebula     *Nebula
 	Endpoints  map[string]Endpoint
-	Debug      bool
+	Verbose    bool
 }
 
 // Server interface for Protobuf service
@@ -50,7 +50,7 @@ func (s *Server) Ping(ctx context.Context, in *PingRequest) (*PingResponse, erro
 		return nil, fmt.Errorf("Failed gRPC ping request")
 	}
 
-	if Cfg.Debug {
+	if Cfg.Verbose {
 		Cfg.Logger.Info("Got ping request", zap.String("Login", *in.Login))
 	}
 
@@ -64,7 +64,7 @@ func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, e
 		return nil, fmt.Errorf("Failed gRPC certificate request")
 	}
 
-	if Cfg.Debug {
+	if Cfg.Verbose {
 		Cfg.Logger.Info("Got certificate request", zap.String("Login", *in.Login))
 	}
 
@@ -200,6 +200,6 @@ func NewConfig() Config {
 			LightHouse:  &LightHouse{},
 		},
 		Endpoints: map[string]Endpoint{},
-		Debug:     false,
+		Verbose:   false,
 	}
 }
