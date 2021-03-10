@@ -133,6 +133,11 @@ local_range: {{ .Subnet }}
 tun:
   disabled: false
   dev: nebula1
+  unsafe_routes:
+    - route: 0.0.0.0/1
+      via: {{ .LightHouse.NebulaIP }}
+    - route: 128.0.0.0/1
+      via: {{ .LightHouse.NebulaIP }}
 
 firewall:
   outbound:
