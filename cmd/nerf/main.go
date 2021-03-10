@@ -70,9 +70,14 @@ func main() {
 			}
 		}
 
+		// Before probing all gRPC endpoints we MUST be authenticated.
+		// Otherwise, we can't continue and nothing happens.
 		nerf.Auth()
-
 		e := nerf.GetFastestEndpoint()
+
+		if err := nerf.NebulaAddLightHouseStaticRoute(&e); err != nil {
+			log.Fatalf("Failed creating a static route to %s: %s\n", e.RemoteIP, err)
+		}
 
 		if e.RemoteHost == "" {
 			log.Fatalln("No available gRPC endpoints found")

@@ -37,6 +37,7 @@ type Server struct {
 type Endpoint struct {
 	Description string
 	RemoteHost  string
+	RemoteIP    string
 	Latency     int64
 }
 
@@ -134,11 +135,16 @@ func GetVPNEndpoints() {
 	for _, record := range srvRecords {
 		txtRecords, err := r.LookupTXT(context.Background(), record.Target)
 		if err != nil || len(txtRecords) == 0 {
-			log.Fatalf("Failed retrieving VPN endpoints: %s\n", err)
+			log.Fatalf("Failed retrieving VPN endpoints (DNS TXT): %s\n", err)
+		}
+		aRecords, err := r.LookupHost(context.Background(), record.Target)
+		if err != nil || len(aRecords) == 0 {
+			log.Fatalf("Failed retrieving VPN endpoints (DNS A): %s\n", err)
 		}
 		endpoint := Endpoint{
 			Description: txtRecords[0],
 			RemoteHost:  record.Target,
+			RemoteIP:    aRecords[0],
 			Latency:     probeEndpoint(record.Target),
 		}
 		Cfg.Endpoints[record.Target] = endpoint
