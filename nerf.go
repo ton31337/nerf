@@ -6,8 +6,6 @@ import (
 	"log"
 	math "math"
 	"net"
-	"os"
-	"path"
 	"time"
 
 	"github.com/google/go-github/github"
@@ -88,12 +86,6 @@ func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, e
 			}
 		}
 	}
-
-	out, err := os.Create(path.Join(NebulaDir(), "config.yml"))
-	if err != nil {
-		return nil, err
-	}
-	defer out.Close()
 
 	config, err := NebulaGenerateConfig()
 	if err != nil {
