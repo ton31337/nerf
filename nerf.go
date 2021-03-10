@@ -127,7 +127,7 @@ func GetVPNEndpoints() {
 		},
 	}
 
-	_, srvRecords, err := r.LookupSRV(context.Background(), "nebula", "udp", "vpn.main-hosting.eu")
+	_, srvRecords, err := r.LookupSRV(context.Background(), "vpn", "udp", "hostinger.io")
 	if err != nil {
 		log.Fatalf("Failed retrieving VPN endpoints: %s\n", err)
 	}
