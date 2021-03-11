@@ -47,7 +47,6 @@ func NebulaAddLightHouseStaticRoute(e *Endpoint) error {
 		Cfg.Logger.Error("Can't delete a static route for gRPC server",
 			zap.String("RemoteIP", e.RemoteIP),
 			zap.Error(err))
-		return err
 	}
 
 	if err := netlink.RouteAdd(&nr); err != nil {
