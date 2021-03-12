@@ -24,7 +24,6 @@ type Config struct {
 	OAuth      *oauth2.Config
 	Token      string
 	ListenAddr string
-	Teams      []string
 	Login      string
 	Nebula     *Nebula
 	Endpoints  map[string]Endpoint
@@ -60,6 +59,8 @@ func (s *Server) Ping(ctx context.Context, in *PingRequest) (*PingResponse, erro
 
 // GetNebulaConfig generates config.yml for Nebula
 func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, error) {
+	var userTeams []string
+
 	if *in.Login == "" {
 		return nil, fmt.Errorf("Failed gRPC certificate request")
 	}
@@ -89,13 +90,26 @@ func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, e
 			users, _, _ := sudoClient.Teams.ListTeamMembers(context.Background(), *team.ID, nil)
 			for _, user := range users {
 				if *user.Login == *originUser.Login {
-					Cfg.Teams = append(Cfg.Teams, *team.Name)
+					userTeams = append(userTeams, *team.Name)
 				}
 			}
 		}
 	}
 
-	config, err := NebulaGenerateConfig()
+	if len(userTeams) > 0 {
+		if Cfg.Verbose {
+			Cfg.Logger.Info("Teams found",
+				zap.String("Login", *in.Login),
+				zap.Strings("Teams", userTeams))
+		}
+	} else {
+		if Cfg.Verbose {
+			Cfg.Logger.Info("Teams not found", zap.String("Login", *in.Login))
+		}
+		return nil, fmt.Errorf("No teams founds")
+	}
+
+	config, err := NebulaGenerateConfig(userTeams)
 	if err != nil {
 		log.Fatalf("Failed creating configuration file for Nebula: %s\n", err)
 	}
@@ -192,7 +206,6 @@ func NewConfig() Config {
 		OAuth:      &oauth2.Config{ClientID: OauthClientID, ClientSecret: OauthClientSecret, Scopes: []string{"user:email"}, Endpoint: githuboauth.Endpoint},
 		Token:      "",
 		ListenAddr: "127.0.0.1:1337",
-		Teams:      []string{},
 		Login:      "",
 		Nebula: &Nebula{
 			Subnet:      "172.17.0.0/12",
