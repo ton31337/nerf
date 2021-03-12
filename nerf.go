@@ -84,23 +84,29 @@ func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, e
 		sudoOauthClient := oauth2.NewClient(context.Background(), sudoToken)
 		sudoClient := github.NewClient(sudoOauthClient)
 
-		teams, _, _ := sudoClient.Teams.ListTeams(context.Background(), "hostinger", nil)
+		teamOptions := github.ListOptions{PerPage: 500}
 
-		opt := &github.TeamListTeamMembersOptions{ListOptions: github.ListOptions{PerPage: 1000}}
-		for _, team := range teams {
-			for {
-				users, resp, _ := sudoClient.Teams.ListTeamMembers(context.Background(), *team.ID, opt)
-				for _, user := range users {
-					if *user.Login == *originUser.Login {
-						userTeams = append(userTeams, *team.Name)
+		for {
+			teams, respTeams, _ := sudoClient.Teams.ListTeams(context.Background(), "hostinger", &teamOptions)
+			for _, team := range teams {
+				usersOptions := &github.TeamListTeamMembersOptions{ListOptions: github.ListOptions{PerPage: 500}}
+				for {
+					users, respUsers, _ := sudoClient.Teams.ListTeamMembers(context.Background(), *team.ID, usersOptions)
+					for _, user := range users {
+						if *user.Login == *originUser.Login {
+							userTeams = append(userTeams, *team.Name)
+						}
 					}
+					if respUsers.NextPage == 0 {
+						break
+					}
+					usersOptions.ListOptions.Page = respUsers.NextPage
 				}
-
-				if resp.NextPage == 0 {
-					break
-				}
-				opt.ListOptions.Page = resp.NextPage
 			}
+			if respTeams.NextPage == 0 {
+				break
+			}
+			teamOptions.Page = respTeams.NextPage
 		}
 	}
 
