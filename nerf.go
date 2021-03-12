@@ -86,12 +86,20 @@ func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, e
 
 		teams, _, _ := sudoClient.Teams.ListTeams(context.Background(), "hostinger", nil)
 
+		opt := &github.TeamListTeamMembersOptions{ListOptions: github.ListOptions{PerPage: 1000}}
 		for _, team := range teams {
-			users, _, _ := sudoClient.Teams.ListTeamMembers(context.Background(), *team.ID, nil)
-			for _, user := range users {
-				if *user.Login == *originUser.Login {
-					userTeams = append(userTeams, *team.Name)
+			for {
+				users, resp, _ := sudoClient.Teams.ListTeamMembers(context.Background(), *team.ID, opt)
+				for _, user := range users {
+					if *user.Login == *originUser.Login {
+						userTeams = append(userTeams, *team.Name)
+					}
 				}
+
+				if resp.NextPage == 0 {
+					break
+				}
+				opt.ListOptions.Page = resp.NextPage
 			}
 		}
 	}
