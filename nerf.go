@@ -26,6 +26,7 @@ type Config struct {
 	ListenAddr string
 	Login      string
 	Nebula     *Nebula
+	Teams      *Teams
 	Endpoints  map[string]Endpoint
 	Verbose    bool
 }
@@ -43,6 +44,11 @@ type Endpoint struct {
 	Latency     int64
 }
 
+type Teams struct {
+	Members   map[string][]string
+	UpdatedAt int64
+}
+
 // Ping get timestamp in milliseconds
 func (s *Server) Ping(ctx context.Context, in *PingRequest) (*PingResponse, error) {
 	if *in.Login == "" {
@@ -57,10 +63,22 @@ func (s *Server) Ping(ctx context.Context, in *PingRequest) (*PingResponse, erro
 	return &PingResponse{Data: &response}, nil
 }
 
+func teamsByUser(login string) []string {
+	var teams []string
+
+	for team, users := range Cfg.Teams.Members {
+		for _, user := range users {
+			if login == user {
+				teams = append(teams, team)
+			}
+		}
+	}
+
+	return teams
+}
+
 // GetNebulaConfig generates config.yml for Nebula
 func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, error) {
-	var userTeams []string
-
 	if *in.Login == "" {
 		return nil, fmt.Errorf("Failed gRPC certificate request")
 	}
@@ -69,47 +87,51 @@ func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, e
 		Cfg.Logger.Info("Got certificate request", zap.String("Login", *in.Login))
 	}
 
-	originToken := &TokenSource{
-		AccessToken: *in.Token,
-	}
-	originOauthClient := oauth2.NewClient(context.Background(), originToken)
-	originClient := github.NewClient(originOauthClient)
-	originUser, _, _ := originClient.Users.Get(context.Background(), "")
-
-	if originUser != nil {
-		Cfg.Login = *originUser.Login
-		sudoToken := &TokenSource{
-			AccessToken: OauthMasterToken,
+	// Sync local teams cache with Github
+	if (time.Now().Unix() - Cfg.Teams.UpdatedAt) > 3600 {
+		originToken := &TokenSource{
+			AccessToken: *in.Token,
 		}
-		sudoOauthClient := oauth2.NewClient(context.Background(), sudoToken)
-		sudoClient := github.NewClient(sudoOauthClient)
+		originOauthClient := oauth2.NewClient(context.Background(), originToken)
+		originClient := github.NewClient(originOauthClient)
+		originUser, _, _ := originClient.Users.Get(context.Background(), "")
 
-		teamOptions := github.ListOptions{PerPage: 500}
+		if originUser != nil {
+			Cfg.Login = *originUser.Login
+			sudoToken := &TokenSource{
+				AccessToken: OauthMasterToken,
+			}
+			sudoOauthClient := oauth2.NewClient(context.Background(), sudoToken)
+			sudoClient := github.NewClient(sudoOauthClient)
 
-		for {
-			teams, respTeams, _ := sudoClient.Teams.ListTeams(context.Background(), "hostinger", &teamOptions)
-			for _, team := range teams {
-				usersOptions := &github.TeamListTeamMembersOptions{ListOptions: github.ListOptions{PerPage: 500}}
-				for {
-					users, respUsers, _ := sudoClient.Teams.ListTeamMembers(context.Background(), *team.ID, usersOptions)
-					for _, user := range users {
-						if *user.Login == *originUser.Login {
-							userTeams = append(userTeams, *team.Name)
+			teamOptions := github.ListOptions{PerPage: 500}
+
+			for {
+				teams, respTeams, _ := sudoClient.Teams.ListTeams(context.Background(), "hostinger", &teamOptions)
+				for _, team := range teams {
+					Cfg.Teams.Members[*team.Name] = make([]string, 0)
+					usersOptions := &github.TeamListTeamMembersOptions{ListOptions: github.ListOptions{PerPage: 500}}
+					for {
+						users, respUsers, _ := sudoClient.Teams.ListTeamMembers(context.Background(), *team.ID, usersOptions)
+						for _, user := range users {
+							Cfg.Teams.Members[*team.Name] = append(Cfg.Teams.Members[*team.Name], *user.Login)
 						}
+						if respUsers.NextPage == 0 {
+							break
+						}
+						usersOptions.ListOptions.Page = respUsers.NextPage
 					}
-					if respUsers.NextPage == 0 {
-						break
-					}
-					usersOptions.ListOptions.Page = respUsers.NextPage
 				}
+				if respTeams.NextPage == 0 {
+					break
+				}
+				teamOptions.Page = respTeams.NextPage
 			}
-			if respTeams.NextPage == 0 {
-				break
-			}
-			teamOptions.Page = respTeams.NextPage
 		}
+		Cfg.Teams.UpdatedAt = time.Now().Unix()
 	}
 
+	userTeams := teamsByUser(*in.Login)
 	if len(userTeams) > 0 {
 		if Cfg.Verbose {
 			Cfg.Logger.Info("Teams found",
@@ -119,8 +141,8 @@ func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, e
 	} else {
 		if Cfg.Verbose {
 			Cfg.Logger.Info("Teams not found", zap.String("Login", *in.Login))
+			return nil, fmt.Errorf("No teams founds")
 		}
-		return nil, fmt.Errorf("No teams founds")
 	}
 
 	config, err := NebulaGenerateConfig(userTeams)
@@ -227,6 +249,7 @@ func NewConfig() Config {
 			LightHouse:  &LightHouse{},
 		},
 		Endpoints: map[string]Endpoint{},
+		Teams:     &Teams{Members: make(map[string][]string), UpdatedAt: time.Now().Unix() - 24*3600},
 		Verbose:   false,
 	}
 }
