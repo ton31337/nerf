@@ -18,6 +18,10 @@ import (
 // OauthMasterToken compile-time derived from -X github.com/ton31337/nerf.OauthMasterToken
 var OauthMasterToken string
 
+// DNSAutoDiscoverZone compile-time derived from -Xgithub.com/ton31337/nerf.DNSAutoDiscoverZone
+// E.g. example.com which will be combined to _vpn._udp.example.com SRV query
+var DNSAutoDiscoverZone string
+
 // Config struct to store all the relevant data for both client and server
 type Config struct {
 	Logger     *zap.Logger
@@ -186,7 +190,7 @@ func GetVPNEndpoints() {
 		},
 	}
 
-	_, srvRecords, err := r.LookupSRV(context.Background(), "vpn", "udp", "hostinger.io")
+	_, srvRecords, err := r.LookupSRV(context.Background(), "vpn", "udp", DNSAutoDiscoverZone)
 	if err != nil {
 		log.Fatalf("Failed retrieving VPN endpoints: %s\n", err)
 	}
