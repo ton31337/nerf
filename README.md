@@ -19,6 +19,8 @@ sequenceDiagram
 export OAUTH_CLIENT_ID=<clientID>
 export OAUTH_CLIENT_SECRET=<clientSecret>
 export OAUTH_MASTER_TOKEN=<masterToken>
+export OAUTH_ORGANIZATION=<githubOrganization>
+export DNS_AUTODISCOVER_ZONE=example.com
 make all # For multiple ARCHs
 make # For Linux amd64 only
 ```

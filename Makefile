@@ -12,6 +12,7 @@ endif
 LDFLAGS = -X github.com/ton31337/nerf.OauthClientID=$(OAUTH_CLIENT_ID) \
 		-X github.com/ton31337/nerf.OauthClientSecret=$(OAUTH_CLIENT_SECRET) \
 		-X github.com/ton31337/nerf.OauthMasterToken=$(OAUTH_MASTER_TOKEN) \
+		-X github.com/ton31337/nerf.OauthOrganization=$(OAUTH_ORGANIZATION) \
 		-X github.com/ton31337/nerf.DNSAutoDiscoverZone=$(DNS_AUTODISCOVER_ZONE)
 
 ALL = linux-amd64 \

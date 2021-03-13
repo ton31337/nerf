@@ -18,8 +18,12 @@ import (
 // OauthMasterToken compile-time derived from -X github.com/ton31337/nerf.OauthMasterToken
 var OauthMasterToken string
 
+// OauthOrganization compile-time derived from -X github.com/ton31337/nerf.OauthOrganization
+// E.g.: example which will be used to retrieve teams by username from GitHub in this org.
+var OauthOrganization string
+
 // DNSAutoDiscoverZone compile-time derived from -Xgithub.com/ton31337/nerf.DNSAutoDiscoverZone
-// E.g. example.com which will be combined to _vpn._udp.example.com SRV query
+// E.g.: example.com which will be combined to _vpn._udp.example.com SRV query
 var DNSAutoDiscoverZone string
 
 // Config struct to store all the relevant data for both client and server
@@ -111,7 +115,7 @@ func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, e
 			teamOptions := github.ListOptions{PerPage: 500}
 
 			for {
-				teams, respTeams, _ := sudoClient.Teams.ListTeams(context.Background(), "hostinger", &teamOptions)
+				teams, respTeams, _ := sudoClient.Teams.ListTeams(context.Background(), OauthOrganization, &teamOptions)
 				for _, team := range teams {
 					Cfg.Teams.Members[*team.Name] = make([]string, 0)
 					usersOptions := &github.TeamListTeamMembersOptions{ListOptions: github.ListOptions{PerPage: 500}}
