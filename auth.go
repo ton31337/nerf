@@ -92,6 +92,9 @@ func openBrowser(url string) error {
 	case "darwin":
 		err = exec.Command("open", url).Start()
 	case "linux":
+		// Firefox does not work properly because:
+		// % sudo xdg-open http://example.org
+		// Running Firefox as root in a regular user's session is not supported.
 		err = exec.Command("xdg-open", url).Start()
 	default:
 		err = fmt.Errorf("unsupported platform")
