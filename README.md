@@ -20,7 +20,7 @@ export OAUTH_CLIENT_ID=<clientID>              # OAuth application client id wit
 export OAUTH_CLIENT_SECRET=<clientSecret>      # OAuth application client secret
 export OAUTH_MASTER_TOKEN=<masterToken>        # OAuth token with 'read:org' scope
 export OAUTH_ORGANIZATION=<githubOrganization> # Github organization
-export DNS_AUTODISCOVER_ZONE=example.com       # DNS zone to discover VPN endpoints
+export DNS_AUTODISCOVER_ZONE=<dnsZone>         # DNS zone to discover VPN endpoints. E.g.: example.org
 make check                                     # Run linters, formatters, etc.
 make all                                       # For multiple ARCHs
 make                                           # For Linux amd64 only
