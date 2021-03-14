@@ -28,6 +28,7 @@ check:
 	go fix ./...
 	go vet -v ./...
 	go mod tidy
+	golines -w ./
 	golangci-lint run
 proto:
 	go build github.com/golang/protobuf/protoc-gen-go

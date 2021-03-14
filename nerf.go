@@ -115,14 +115,27 @@ func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, e
 			teamOptions := github.ListOptions{PerPage: 500}
 
 			for {
-				teams, respTeams, _ := sudoClient.Teams.ListTeams(context.Background(), OauthOrganization, &teamOptions)
+				teams, respTeams, _ := sudoClient.Teams.ListTeams(
+					context.Background(),
+					OauthOrganization,
+					&teamOptions,
+				)
 				for _, team := range teams {
 					Cfg.Teams.Members[*team.Name] = make([]string, 0)
-					usersOptions := &github.TeamListTeamMembersOptions{ListOptions: github.ListOptions{PerPage: 500}}
+					usersOptions := &github.TeamListTeamMembersOptions{
+						ListOptions: github.ListOptions{PerPage: 500},
+					}
 					for {
-						users, respUsers, _ := sudoClient.Teams.ListTeamMembers(context.Background(), *team.ID, usersOptions)
+						users, respUsers, _ := sudoClient.Teams.ListTeamMembers(
+							context.Background(),
+							*team.ID,
+							usersOptions,
+						)
 						for _, user := range users {
-							Cfg.Teams.Members[*team.Name] = append(Cfg.Teams.Members[*team.Name], *user.Login)
+							Cfg.Teams.Members[*team.Name] = append(
+								Cfg.Teams.Members[*team.Name],
+								*user.Login,
+							)
 						}
 						if respUsers.NextPage == 0 {
 							break
@@ -246,8 +259,13 @@ var OauthClientSecret string
 // NewConfig initializes NerfCfg
 func NewConfig() Config {
 	return Config{
-		Logger:     &zap.Logger{},
-		OAuth:      &oauth2.Config{ClientID: OauthClientID, ClientSecret: OauthClientSecret, Scopes: []string{"user:email"}, Endpoint: githuboauth.Endpoint},
+		Logger: &zap.Logger{},
+		OAuth: &oauth2.Config{
+			ClientID:     OauthClientID,
+			ClientSecret: OauthClientSecret,
+			Scopes:       []string{"user:email"},
+			Endpoint:     githuboauth.Endpoint,
+		},
 		Token:      "",
 		ListenAddr: "127.0.0.1:1337",
 		Login:      "",
@@ -257,7 +275,10 @@ func NewConfig() Config {
 			LightHouse:  &LightHouse{},
 		},
 		Endpoints: map[string]Endpoint{},
-		Teams:     &Teams{Members: make(map[string][]string), UpdatedAt: time.Now().Unix() - 24*3600},
-		Verbose:   false,
+		Teams: &Teams{
+			Members:   make(map[string][]string),
+			UpdatedAt: time.Now().Unix() - 24*3600,
+		},
+		Verbose: false,
 	}
 }
