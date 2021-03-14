@@ -16,13 +16,14 @@ sequenceDiagram
 ## Compile
 
 ```
-export OAUTH_CLIENT_ID=<clientID>
-export OAUTH_CLIENT_SECRET=<clientSecret>
-export OAUTH_MASTER_TOKEN=<masterToken>
-export OAUTH_ORGANIZATION=<githubOrganization>
-export DNS_AUTODISCOVER_ZONE=example.com
-make all # For multiple ARCHs
-make # For Linux amd64 only
+export OAUTH_CLIENT_ID=<clientID>              # OAuth application client id
+export OAUTH_CLIENT_SECRET=<clientSecret>      # OAuth application client secret
+export OAUTH_MASTER_TOKEN=<masterToken>        # OAuth token with 'read:org' scope
+export OAUTH_ORGANIZATION=<githubOrganization> # Github organization
+export DNS_AUTODISCOVER_ZONE=example.com       # DNS zone to discover VPN endpoints
+make check                                     # Run linters, formatters, etc.
+make all                                       # For multiple ARCHs
+make                                           # For Linux amd64 only
 ```
 
 ## Start a gRPC server
