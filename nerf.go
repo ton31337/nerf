@@ -52,6 +52,7 @@ type Endpoint struct {
 	Latency     int64
 }
 
+// Teams struct to store all the relevant data about Github Teams.
 type Teams struct {
 	Members   map[string][]string
 	UpdatedAt int64
