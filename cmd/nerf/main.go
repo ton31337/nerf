@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/signal"
 	"path"
 	"strings"
 	"time"
@@ -133,7 +134,7 @@ func main() {
 
 		client := nerf.NewServerClient(conn)
 		request := &nerf.Request{Token: &nerf.Cfg.Token, Login: &nerf.Cfg.Login}
-		response, err := client.GetNebulaConfig(context.Background(), request)
+		response, err := client.Connect(context.Background(), request)
 		if err != nil {
 			log.Fatalf("Failed calling remote gRPC %s(%s): %s\n", e.RemoteHost, e.Description, err)
 		}
@@ -157,8 +158,17 @@ func main() {
 		}
 		defer out.Close()
 
+		done := make(chan os.Signal, 1)
+		signal.Notify(done, os.Interrupt)
+
 		if err := nerf.NebulaStart(); err != nil {
 			log.Fatalf("Failed starting Nebula client: %s\n", err)
+		}
+
+		<-done
+		notify, err := client.Disconnect(context.Background(), &nerf.Notify{Login: &nerf.Cfg.Login})
+		if err != nil {
+			nerf.Cfg.Logger.Error("Disconnect", zap.String("Login", nerf.Cfg.Login), zap.String("Response", notify.String()))
 		}
 	}
 

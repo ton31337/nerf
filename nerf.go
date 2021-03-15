@@ -8,6 +8,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/empty"
+	google_protobuf "github.com/golang/protobuf/ptypes/empty"
 	"github.com/google/go-github/github"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -134,14 +136,29 @@ func SyncTeams() {
 	Cfg.Teams.UpdatedAt = time.Now().Unix()
 }
 
-// GetNebulaConfig generates config.yml for Nebula
-func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, error) {
+// Disconnect - notify the server about disconnection
+func (s *Server) Disconnect(ctx context.Context, in *Notify) (*google_protobuf.Empty, error) {
+	var err error
+
+	if *in.Login == "" {
+		err = fmt.Errorf("Failed gRPC disconnect request")
+	}
+
+	if Cfg.Verbose {
+		Cfg.Logger.Info("Disconnect", zap.String("Login", *in.Login))
+	}
+
+	return &empty.Empty{}, err
+}
+
+// Connect - connects to the server which generates config.yml for Nebula
+func (s *Server) Connect(ctx context.Context, in *Request) (*Response, error) {
 	if *in.Login == "" {
 		return nil, fmt.Errorf("Failed gRPC certificate request")
 	}
 
 	if Cfg.Verbose {
-		Cfg.Logger.Info("Got certificate request", zap.String("Login", *in.Login))
+		Cfg.Logger.Info("Connect", zap.String("Login", *in.Login))
 	}
 
 	token := &TokenSource{
