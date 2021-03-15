@@ -130,7 +130,7 @@ func int2NebulaIP(ip int64) string {
 	return b0 + "." + b1 + "." + b2 + "." + b3
 }
 
-func nebulaClientIP() string {
+func NebulaClientIP() string {
 	clientIPHash := crc.CalculateCRC(crc.CCITT, []byte(Cfg.Login))
 	clientIP := int64(nebulaIP2Int(nebulaSubnet()) + uint32(clientIPHash))
 	return int2NebulaIP(clientIP)
@@ -163,7 +163,7 @@ func NebulaGenerateCertificate(userTeams []string) {
 		"-out-key", keyPath,
 		"-ca-crt", "/etc/nebula/certs/ca.crt",
 		"-ca-key", "/etc/nebula/certs/ca.key",
-		"-ip", nebulaClientIP()+"/"+nebulaSubnetLen(), "-groups", strings.Join(userTeams, ","),
+		"-ip", NebulaClientIP()+"/"+nebulaSubnetLen(), "-groups", strings.Join(userTeams, ","),
 		"-duration", "48h").Run()
 	if err != nil {
 		log.Fatalf("Failed generating certificate for Nebula: %v\n", err)

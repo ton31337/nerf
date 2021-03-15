@@ -153,13 +153,7 @@ func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, e
 	}
 
 	userTeams := teamsByUser(*in.Login)
-	if len(userTeams) > 0 {
-		if Cfg.Verbose {
-			Cfg.Logger.Info("Teams found",
-				zap.String("Login", *in.Login),
-				zap.Strings("Teams", userTeams))
-		}
-	} else {
+	if len(userTeams) == 0 {
 		if Cfg.Verbose {
 			Cfg.Logger.Info("Teams not found", zap.String("Login", *in.Login))
 			return nil, fmt.Errorf("No teams founds")
@@ -169,6 +163,13 @@ func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, e
 	config, err := NebulaGenerateConfig(userTeams)
 	if err != nil {
 		log.Fatalf("Failed creating configuration file for Nebula: %s\n", err)
+	}
+
+	if Cfg.Verbose {
+		Cfg.Logger.Info("Teams found",
+			zap.String("Login", *in.Login),
+			zap.String("ClientIP", NebulaClientIP()),
+			zap.Strings("Teams", userTeams))
 	}
 
 	return &Response{Config: &config}, nil
