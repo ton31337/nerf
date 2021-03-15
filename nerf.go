@@ -86,6 +86,54 @@ func teamsByUser(login string) []string {
 	return teams
 }
 
+// SyncTeams sync Github Teams with local cache
+// Scheduled every 10 seconds and updated every hour.
+func SyncTeams() {
+	token := &TokenSource{
+		AccessToken: OauthMasterToken,
+	}
+	oclient := oauth2.NewClient(context.Background(), token)
+	client := github.NewClient(oclient)
+
+	teamOptions := github.ListOptions{PerPage: 500}
+
+	for {
+		teams, respTeams, _ := client.Teams.ListTeams(
+			context.Background(),
+			OauthOrganization,
+			&teamOptions,
+		)
+		for _, team := range teams {
+			Cfg.Teams.Members[*team.Name] = make([]string, 0)
+			usersOptions := &github.TeamListTeamMembersOptions{
+				ListOptions: github.ListOptions{PerPage: 500},
+			}
+			for {
+				users, respUsers, _ := client.Teams.ListTeamMembers(
+					context.Background(),
+					*team.ID,
+					usersOptions,
+				)
+				for _, user := range users {
+					Cfg.Teams.Members[*team.Name] = append(
+						Cfg.Teams.Members[*team.Name],
+						*user.Login,
+					)
+				}
+				if respUsers.NextPage == 0 {
+					break
+				}
+				usersOptions.ListOptions.Page = respUsers.NextPage
+			}
+		}
+		if respTeams.NextPage == 0 {
+			break
+		}
+		teamOptions.Page = respTeams.NextPage
+	}
+	Cfg.Teams.UpdatedAt = time.Now().Unix()
+}
+
 // GetNebulaConfig generates config.yml for Nebula
 func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, error) {
 	if *in.Login == "" {
@@ -96,84 +144,44 @@ func (s *Server) GetNebulaConfig(ctx context.Context, in *Request) (*Response, e
 		Cfg.Logger.Info("Got certificate request", zap.String("Login", *in.Login))
 	}
 
-	// Sync local teams cache with Github
-	if (time.Now().Unix() - Cfg.Teams.UpdatedAt) > 3600 {
-		originToken := &TokenSource{
-			AccessToken: *in.Token,
-		}
-		originOauthClient := oauth2.NewClient(context.Background(), originToken)
-		originClient := github.NewClient(originOauthClient)
-		originUser, _, _ := originClient.Users.Get(context.Background(), "")
-
-		if originUser != nil {
-			Cfg.Login = *originUser.Login
-			sudoToken := &TokenSource{
-				AccessToken: OauthMasterToken,
-			}
-			sudoOauthClient := oauth2.NewClient(context.Background(), sudoToken)
-			sudoClient := github.NewClient(sudoOauthClient)
-
-			teamOptions := github.ListOptions{PerPage: 500}
-
-			for {
-				teams, respTeams, _ := sudoClient.Teams.ListTeams(
-					context.Background(),
-					OauthOrganization,
-					&teamOptions,
-				)
-				for _, team := range teams {
-					Cfg.Teams.Members[*team.Name] = make([]string, 0)
-					usersOptions := &github.TeamListTeamMembersOptions{
-						ListOptions: github.ListOptions{PerPage: 500},
-					}
-					for {
-						users, respUsers, _ := sudoClient.Teams.ListTeamMembers(
-							context.Background(),
-							*team.ID,
-							usersOptions,
-						)
-						for _, user := range users {
-							Cfg.Teams.Members[*team.Name] = append(
-								Cfg.Teams.Members[*team.Name],
-								*user.Login,
-							)
-						}
-						if respUsers.NextPage == 0 {
-							break
-						}
-						usersOptions.ListOptions.Page = respUsers.NextPage
-					}
-				}
-				if respTeams.NextPage == 0 {
-					break
-				}
-				teamOptions.Page = respTeams.NextPage
-			}
-		}
-		Cfg.Teams.UpdatedAt = time.Now().Unix()
+	token := &TokenSource{
+		AccessToken: *in.Token,
+	}
+	oclient := oauth2.NewClient(context.Background(), token)
+	client := github.NewClient(oclient)
+	user, _, err := client.Users.Get(context.Background(), "")
+	if err != nil {
+		return nil, fmt.Errorf("Failed validate login %s(%s): %s\n", user, *in.Login, err)
 	}
 
-	userTeams := teamsByUser(*in.Login)
+	userTeams := teamsByUser(*user.Login)
 	if len(userTeams) == 0 {
 		if Cfg.Verbose {
-			Cfg.Logger.Info("Teams not found", zap.String("Login", *in.Login))
+			Cfg.Logger.Info("Teams not found", zap.String("Login", *user.Login))
 			return nil, fmt.Errorf("No teams founds")
 		}
 	}
 
+	Cfg.Login = *user.Login
+	clientIP := NebulaClientIP()
+
 	config, err := NebulaGenerateConfig(userTeams)
 	if err != nil {
-		log.Fatalf("Failed creating configuration file for Nebula: %s\n", err)
+		Cfg.Logger.Error(
+			"Can't generate config for Nebula",
+			zap.String("Login", *user.Login),
+			zap.Strings("Teams", userTeams),
+		)
 	}
 
 	if Cfg.Verbose {
 		Cfg.Logger.Info("Teams found",
-			zap.String("Login", *in.Login),
-			zap.String("ClientIP", NebulaClientIP()),
+			zap.String("Login", *user.Login),
+			zap.String("ClientIP", clientIP),
 			zap.Strings("Teams", userTeams))
 	}
 
-	return &Response{Config: &config}, nil
+	return &Response{Config: &config, ClientIP: &clientIP, Teams: userTeams}, nil
 }
 
 func probeEndpoint(remoteHost string) int64 {

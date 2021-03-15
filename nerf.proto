@@ -24,4 +24,6 @@ message Request {
 
 message Response {
     required string config = 1;
+    required string clientIP = 2;
+    repeated string teams = 3;
 }
