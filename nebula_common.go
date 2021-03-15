@@ -130,6 +130,7 @@ func int2NebulaIP(ip int64) string {
 	return b0 + "." + b1 + "." + b2 + "." + b3
 }
 
+// NebulaClientIP returns client's IP generated from Github login
 func NebulaClientIP() string {
 	clientIPHash := crc.CalculateCRC(crc.CCITT, []byte(Cfg.Login))
 	clientIP := int64(nebulaIP2Int(nebulaSubnet()) + uint32(clientIPHash))
