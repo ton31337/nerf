@@ -83,16 +83,12 @@ func main() {
 				if (time.Now().Unix() - nerf.Cfg.Teams.UpdatedAt) > 3600 {
 					if nerf.Cfg.Verbose {
 						nerf.Cfg.Logger.Info(
-							"Syncing Github Teams with local cache",
-							zap.Bool("Begin-Of-Sync", true),
-						)
+							"Begin-Of-Sync Github Teams with local cache")
 					}
 					nerf.SyncTeams()
 					if nerf.Cfg.Verbose {
 						nerf.Cfg.Logger.Info(
-							"Syncing Github Teams with local cache",
-							zap.Bool("End-Of-Sync", true),
-						)
+							"End-Of-Sync Github Teams with local cache")
 					}
 				}
 			}
