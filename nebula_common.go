@@ -167,7 +167,12 @@ func NebulaGenerateCertificate(userTeams []string) {
 		"-ip", NebulaClientIP()+"/"+nebulaSubnetLen(), "-groups", strings.Join(userTeams, ","),
 		"-duration", "48h").Run()
 	if err != nil {
-		log.Fatalf("Failed generating certificate for Nebula: %v\n", err)
+		Cfg.Logger.Error(
+			"Can't generate certificate for Nebula",
+			zap.String("Login", Cfg.Login),
+			zap.Strings("Teams", userTeams),
+			zap.String("ClientIP", NebulaClientIP()),
+		)
 	}
 
 	ca, err := ioutil.ReadFile("/etc/nebula/certs/ca.crt")
