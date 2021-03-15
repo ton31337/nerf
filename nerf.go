@@ -252,6 +252,15 @@ func GetFastestEndpoint() Endpoint {
 		if e.Latency < latency {
 			fastestEndpoint = e
 		}
+		if Cfg.Verbose {
+			Cfg.Logger.Info(
+				"Probing endpoint",
+				zap.String("RemoteIP", e.RemoteIP),
+				zap.String("RemoteHost", e.RemoteHost),
+				zap.String("Description", e.Description),
+				zap.Int64("Latency (ms)", e.Latency),
+			)
+		}
 	}
 
 	return fastestEndpoint
