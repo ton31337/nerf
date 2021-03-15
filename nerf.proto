@@ -1,10 +1,12 @@
 syntax = "proto2";
-option go_package = "github.com/ton31337/nerf";
 
 package nerf;
 
+import "google/protobuf/empty.proto";
+
 service Server {
-    rpc GetNebulaConfig (Request) returns (Response) {}
+    rpc Connect (Request) returns (Response) {}
+    rpc Disconnect (Notify) returns (google.protobuf.Empty) {}
     rpc Ping (PingRequest) returns (PingResponse) {}
 }
 
@@ -26,4 +28,8 @@ message Response {
     required string config = 1;
     required string clientIP = 2;
     repeated string teams = 3;
+}
+
+message Notify {
+    required string login = 1;
 }
