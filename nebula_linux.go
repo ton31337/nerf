@@ -2,6 +2,7 @@ package nerf
 
 import (
 	"net"
+	"os/exec"
 	"path"
 
 	"github.com/vishvananda/netlink"
@@ -20,6 +21,48 @@ func NebulaDir() string {
 // NebulaExecutable show full path of Nebula executable
 func NebulaExecutable() string {
 	return path.Join(NebulaDir(), "nebula")
+}
+
+// NebulaSetNameServers set name server for the client to self
+func NebulaSetNameServers(e *Endpoint, NameServer string) error {
+	var err error
+
+	routes, err := netlink.RouteGet(net.ParseIP(e.RemoteIP))
+	if err != nil {
+		Cfg.Logger.Error("Can't get route for gRPC server",
+			zap.String("RemoteIP", e.RemoteIP),
+			zap.Error(err))
+		return err
+	}
+
+	device, err := netlink.LinkByIndex(routes[0].LinkIndex)
+	if err != nil {
+		Cfg.Logger.Error("Can't get default interface by ifIndex",
+			zap.String("Dst", routes[0].Gw.String()),
+			zap.Int("ifIndex", routes[0].LinkIndex),
+			zap.Error(err))
+		return err
+	}
+
+	cmd := exec.Command(
+		"systemd-resolve",
+		"--interface",
+		device.Attrs().Name,
+		"--set-dns",
+		NameServer,
+		"--set-domain",
+		DNSAutoDiscoverZone,
+	)
+	err = cmd.Run()
+	if err != nil {
+		Cfg.Logger.Error("Can't set name servers",
+			zap.String("NameServer1", Cfg.Nebula.LightHouse.NebulaIP),
+			zap.String("Domain", DNSAutoDiscoverZone),
+			zap.Error(err))
+		return err
+	}
+
+	return err
 }
 
 // NebulaAddLightHouseStaticRoute add static route towards fastest gRPC server via default route

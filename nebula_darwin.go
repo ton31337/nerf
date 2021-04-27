@@ -45,6 +45,40 @@ func nebulaDefaultGateway(e *Endpoint) (string, error) {
 	return defaultGw, nil
 }
 
+// NebulaSetNameServers set name server for the client to self
+func NebulaSetNameServers(e *Endpoint, NameServer string) error {
+	var err error
+	var lines []byte
+
+	cmd := exec.Command(
+		"networksetup",
+		"listallnetworkservices",
+	)
+	lines, err = cmd.CombinedOutput()
+	if err != nil {
+		Cfg.Logger.Error("Can't get network services",
+			zap.Error(err))
+		return err
+	}
+
+	services := strings.Split(string(lines), "\n")
+	for _, service := range services {
+		if !strings.Contains(service, "Wi-Fi") || !strings.Contains(service, "Thunderbolt") ||
+			!strings.Contains(service, "USB") {
+			continue
+		}
+		if exec.Command("networksetup", "-setdnsservers", service, NameServer).Run() != nil {
+			Cfg.Logger.Error("Can't set name servers",
+				zap.String("NameServer1", NameServer),
+				zap.String("Domain", DNSAutoDiscoverZone),
+				zap.Error(err))
+			return err
+		}
+	}
+
+	return err
+}
+
 // NebulaAddLightHouseStaticRoute add static route towards fastest gRPC server via default route
 func NebulaAddLightHouseStaticRoute(e *Endpoint) error {
 	defaultGw, err := nebulaDefaultGateway(e)
