@@ -198,7 +198,12 @@ func (s *Server) Connect(ctx context.Context, in *Request) (*Response, error) {
 			zap.Strings("Teams", userTeams))
 	}
 
-	return &Response{Config: &config, ClientIP: &clientIP, Teams: userTeams}, nil
+	return &Response{
+		Config:       &config,
+		ClientIP:     &clientIP,
+		LightHouseIP: &Cfg.Nebula.LightHouse.NebulaIP,
+		Teams:        userTeams,
+	}, nil
 }
 
 func probeEndpoint(remoteHost string) int64 {

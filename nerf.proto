@@ -27,7 +27,8 @@ message Request {
 message Response {
     required string config = 1;
     required string clientIP = 2;
-    repeated string teams = 3;
+    required string lightHouseIP = 3;
+    repeated string teams = 4;
 }
 
 message Notify {

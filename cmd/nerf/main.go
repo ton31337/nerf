@@ -145,6 +145,7 @@ func main() {
 				zap.String("RemoteHost", e.RemoteHost),
 				zap.String("Description", e.Description),
 				zap.String("ClientIP", *response.ClientIP),
+				zap.String("LightHouseIP", *response.LightHouseIP),
 				zap.Strings("Teams", response.Teams))
 		}
 
@@ -160,6 +161,10 @@ func main() {
 
 		done := make(chan os.Signal, 1)
 		signal.Notify(done, os.Interrupt)
+
+		if err := nerf.NebulaSetNameServers(&e, *response.LightHouseIP); err != nil {
+			log.Fatalf("Failed setting custom name servers: %s\n", err)
+		}
 
 		if err := nerf.NebulaStart(); err != nil {
 			log.Fatalf("Failed starting Nebula client: %s\n", err)
