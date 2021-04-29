@@ -14,29 +14,53 @@ import (
 
 	"github.com/ton31337/nerf"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 )
+
+func stringToLogLevel(level string) zapcore.Level {
+	switch string(level) {
+	case "debug", "DEBUG":
+		return zapcore.DebugLevel
+	case "info", "INFO":
+		return zapcore.InfoLevel
+	case "warn", "WARN":
+		return zapcore.WarnLevel
+	case "error", "ERROR":
+		return zapcore.ErrorLevel
+	}
+
+	return zapcore.InfoLevel
+}
 
 func main() {
 	server := flag.Bool("server", false, "Start gRPC server to generate config for Nebula")
 	lightHouse := flag.String("lighthouse", "", "Set the lighthouse. E.g.: <NebulaIP>:<PublicIP>")
-	verbose := flag.Bool("verbose", false, "Print verbose output")
+	logLevel := flag.String(
+		"log-level",
+		"info",
+		"Set the logging level - values are 'debug', 'info', 'warn', and 'error'",
+	)
 	printUsage := flag.Bool("help", false, "Print command line usage")
 
 	flag.Parse()
 	nerf.Cfg = nerf.NewConfig()
 
-	logger, _ := zap.NewProduction()
+	logger, _ := zap.Config{
+		Encoding:    "json",
+		Level:       zap.NewAtomicLevelAt(stringToLogLevel(*logLevel)),
+		OutputPaths: []string{"stdout"},
+		EncoderConfig: zapcore.EncoderConfig{
+			MessageKey: "message",
+		},
+	}.Build()
+
 	nerf.Cfg.Logger = logger
 	defer func() {
 		if err := nerf.Cfg.Logger.Sync(); err != nil {
 			log.Fatalln("Failed Logger sync")
 		}
 	}()
-
-	if *verbose {
-		nerf.Cfg.Verbose = true
-	}
 
 	if *server {
 		if *lightHouse == "" {
@@ -67,9 +91,7 @@ func main() {
 		nerf.Cfg.Nebula.LightHouse.NebulaIP = lightHouseIPS[0]
 		nerf.Cfg.Nebula.LightHouse.PublicIP = lightHouseIPS[1]
 
-		if nerf.Cfg.Verbose {
-			nerf.Cfg.Logger.Info("Nerf server started")
-		}
+		nerf.Cfg.Logger.Debug("Nerf server started")
 
 		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", 9000))
 		if err != nil {
@@ -82,15 +104,11 @@ func main() {
 		go func() {
 			for range time.Tick(10 * time.Second) {
 				if (time.Now().Unix() - nerf.Cfg.Teams.UpdatedAt) > 3600 {
-					if nerf.Cfg.Verbose {
-						nerf.Cfg.Logger.Info(
-							"Begin-Of-Sync Github Teams with local cache")
-					}
+					nerf.Cfg.Logger.Debug(
+						"Begin-Of-Sync Github Teams with local cache")
 					nerf.SyncTeams()
-					if nerf.Cfg.Verbose {
-						nerf.Cfg.Logger.Info(
-							"End-Of-Sync Github Teams with local cache")
-					}
+					nerf.Cfg.Logger.Debug(
+						"End-Of-Sync Github Teams with local cache")
 				}
 			}
 		}()
@@ -118,13 +136,11 @@ func main() {
 			log.Fatalf("Failed creating a static route to %s: %s\n", e.RemoteIP, err)
 		}
 
-		if nerf.Cfg.Verbose {
-			nerf.Cfg.Logger.Info("Authorized", zap.String("Login", nerf.Cfg.Login))
-			nerf.Cfg.Logger.Info("Using fastest gRPC endpoint",
-				zap.String("RemoteIP", e.RemoteIP),
-				zap.String("RemoteHost", e.RemoteHost),
-				zap.String("Description", e.Description))
-		}
+		nerf.Cfg.Logger.Debug("Authorized", zap.String("Login", nerf.Cfg.Login))
+		nerf.Cfg.Logger.Debug("Using fastest gRPC endpoint",
+			zap.String("RemoteIP", e.RemoteIP),
+			zap.String("RemoteHost", e.RemoteHost),
+			zap.String("Description", e.Description))
 
 		conn, err := grpc.Dial(e.RemoteHost+":9000", grpc.WithInsecure())
 		if err != nil {
@@ -139,14 +155,12 @@ func main() {
 			log.Fatalf("Failed calling remote gRPC %s(%s): %s\n", e.RemoteHost, e.Description, err)
 		}
 
-		if nerf.Cfg.Verbose {
-			nerf.Cfg.Logger.Info("Connected",
-				zap.String("RemoteIP", e.RemoteIP),
-				zap.String("RemoteHost", e.RemoteHost),
-				zap.String("Description", e.Description),
-				zap.String("ClientIP", *response.ClientIP),
-				zap.Strings("Teams", response.Teams))
-		}
+		nerf.Cfg.Logger.Debug("Connected",
+			zap.String("RemoteIP", e.RemoteIP),
+			zap.String("RemoteHost", e.RemoteHost),
+			zap.String("Description", e.Description),
+			zap.String("ClientIP", *response.ClientIP),
+			zap.Strings("Teams", response.Teams))
 
 		out, err := os.Create(path.Join(nerf.NebulaDir(), "config.yml"))
 		if err != nil {
