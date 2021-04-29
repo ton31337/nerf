@@ -20,9 +20,9 @@ ALL = linux-amd64 \
 
 all: $(ALL:%=build/%/nerf)
 build/%/nerf: .FORCE
-	GOOS=$(firstword $(subst -, , $*)) \
+	@-GOOS=$(firstword $(subst -, , $*)) \
 		GOARCH=$(word 2, $(subst -, ,$*)) $(GOENV) \
-		@-go build -ldflags "$(LDFLAGS)" -o $@ ${NERF_CMD_PATH}
+		go build -ldflags "$(LDFLAGS)" -o $@ ${NERF_CMD_PATH}
 check:
 	go fmt ./...
 	go fix ./...
