@@ -38,7 +38,6 @@ type Config struct {
 	Nebula     *Nebula
 	Teams      *Teams
 	Endpoints  map[string]Endpoint
-	Verbose    bool
 }
 
 // Server interface for Protobuf service
@@ -66,9 +65,7 @@ func (s *Server) Ping(ctx context.Context, in *PingRequest) (*PingResponse, erro
 		return nil, fmt.Errorf("Failed gRPC ping request")
 	}
 
-	if Cfg.Verbose {
-		Cfg.Logger.Info("Got ping request", zap.String("Login", *in.Login))
-	}
+	Cfg.Logger.Debug("Got ping request", zap.String("Login", *in.Login))
 
 	response := time.Now().Round(time.Millisecond).UnixNano() / 1e6
 	return &PingResponse{Data: &response}, nil
@@ -144,9 +141,7 @@ func (s *Server) Disconnect(ctx context.Context, in *Notify) (*google_protobuf.E
 		err = fmt.Errorf("Failed gRPC disconnect request")
 	}
 
-	if Cfg.Verbose {
-		Cfg.Logger.Info("Disconnect", zap.String("Login", *in.Login))
-	}
+	Cfg.Logger.Debug("Disconnect", zap.String("Login", *in.Login))
 
 	return &empty.Empty{}, err
 }
@@ -157,9 +152,7 @@ func (s *Server) Connect(ctx context.Context, in *Request) (*Response, error) {
 		return nil, fmt.Errorf("Failed gRPC certificate request")
 	}
 
-	if Cfg.Verbose {
-		Cfg.Logger.Info("Connect", zap.String("Login", *in.Login))
-	}
+	Cfg.Logger.Debug("Connect", zap.String("Login", *in.Login))
 
 	token := &TokenSource{
 		AccessToken: *in.Token,
@@ -173,10 +166,8 @@ func (s *Server) Connect(ctx context.Context, in *Request) (*Response, error) {
 
 	userTeams := teamsByUser(*user.Login)
 	if len(userTeams) == 0 {
-		if Cfg.Verbose {
-			Cfg.Logger.Info("Teams not found", zap.String("Login", *user.Login))
-			return nil, fmt.Errorf("No teams founds")
-		}
+		Cfg.Logger.Debug("Teams not found", zap.String("Login", *user.Login))
+		return nil, fmt.Errorf("No teams founds")
 	}
 
 	Cfg.Login = *user.Login
@@ -191,12 +182,10 @@ func (s *Server) Connect(ctx context.Context, in *Request) (*Response, error) {
 		)
 	}
 
-	if Cfg.Verbose {
-		Cfg.Logger.Info("Teams found",
-			zap.String("Login", *user.Login),
-			zap.String("ClientIP", clientIP),
-			zap.Strings("Teams", userTeams))
-	}
+	Cfg.Logger.Debug("Teams found",
+		zap.String("Login", *user.Login),
+		zap.String("ClientIP", clientIP),
+		zap.Strings("Teams", userTeams))
 
 	return &Response{Config: &config, ClientIP: &clientIP, Teams: userTeams}, nil
 }
@@ -269,15 +258,13 @@ func GetFastestEndpoint() Endpoint {
 		if e.Latency < latency {
 			fastestEndpoint = e
 		}
-		if Cfg.Verbose {
-			Cfg.Logger.Info(
-				"Probing endpoint",
-				zap.String("RemoteIP", e.RemoteIP),
-				zap.String("RemoteHost", e.RemoteHost),
-				zap.String("Description", e.Description),
-				zap.Int64("Latency (ms)", e.Latency),
-			)
-		}
+		Cfg.Logger.Debug(
+			"Probing endpoint",
+			zap.String("RemoteIP", e.RemoteIP),
+			zap.String("RemoteHost", e.RemoteHost),
+			zap.String("Description", e.Description),
+			zap.Int64("Latency (ms)", e.Latency),
+		)
 	}
 
 	return fastestEndpoint
@@ -315,6 +302,5 @@ func NewConfig() Config {
 			Members:   make(map[string][]string),
 			UpdatedAt: time.Now().Unix() - 24*3600,
 		},
-		Verbose: false,
 	}
 }
