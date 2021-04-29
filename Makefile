@@ -22,7 +22,7 @@ all: $(ALL:%=build/%/nerf)
 build/%/nerf: .FORCE
 	GOOS=$(firstword $(subst -, , $*)) \
 		GOARCH=$(word 2, $(subst -, ,$*)) $(GOENV) \
-		go build -ldflags "$(LDFLAGS)" -o $@ ${NERF_CMD_PATH}
+		@-go build -ldflags "$(LDFLAGS)" -o $@ ${NERF_CMD_PATH}
 check:
 	go fmt ./...
 	go fix ./...
@@ -35,7 +35,7 @@ proto:
 	PATH="$(PWD):$(PATH)" protoc --go_out=plugins=grpc:. *.proto
 	rm protoc-gen-go
 bin:
-	go build -ldflags "$(LDFLAGS)" -o ./nerf ${NERF_CMD_PATH}
+	@-go build -ldflags "$(LDFLAGS)" -o ./nerf ${NERF_CMD_PATH}
 clean:
 	rm -rf ./build
 	rm -f ./nerf
