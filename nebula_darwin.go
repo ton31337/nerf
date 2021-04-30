@@ -46,7 +46,7 @@ func nebulaDefaultGateway(e *Endpoint) (string, error) {
 }
 
 // NebulaSetNameServers set name server for the client to self
-func NebulaSetNameServers(e *Endpoint, NameServer string) error {
+func NebulaSetNameServers(e *Endpoint, NameServers []string, save bool) error {
 	var err error
 	var lines []byte
 
