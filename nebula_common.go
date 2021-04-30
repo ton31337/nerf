@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -117,7 +116,7 @@ firewall:
 func nebulaIP2Int(ip string) uint32 {
 	var long uint32
 	if err := binary.Read(bytes.NewBuffer(net.ParseIP(ip).To4()), binary.BigEndian, &long); err != nil {
-		log.Fatalf("Failed converting Nebula IP to integer: %s\n", err)
+		Cfg.Logger.Fatal("failed converting Nebula IP to integer", zap.Error(err))
 	}
 	return long
 }
@@ -177,17 +176,17 @@ func NebulaGenerateCertificate(userTeams []string) {
 
 	ca, err := ioutil.ReadFile("/etc/nebula/certs/ca.crt")
 	if err != nil {
-		log.Fatalf("Failed retrieving CA certificate: %v\n", err)
+		Cfg.Logger.Fatal("failed retrieving CA certificate", zap.Error(err))
 	}
 
 	crt, err := ioutil.ReadFile(crtPath)
 	if err != nil {
-		log.Fatalf("Failed retrieving client certificate: %v\n", err)
+		Cfg.Logger.Fatal("failed retrieving client certificate", zap.Error(err))
 	}
 
 	key, err := ioutil.ReadFile(keyPath)
 	if err != nil {
-		log.Fatalf("Failed retrieving client key: %v\n", err)
+		Cfg.Logger.Fatal("failed retrieving client key", zap.Error(err))
 	}
 
 	Cfg.Nebula.Certificate.Ca = string(ca)
@@ -204,7 +203,7 @@ func NebulaDownload() (err error) {
 
 	out, err := os.Create(NebulaExecutable())
 	if err != nil {
-		Cfg.Logger.Error("Can't create Nebula binary",
+		Cfg.Logger.Error("can't create Nebula binary",
 			zap.String("Path", NebulaExecutable()),
 			zap.Error(err))
 		return err
@@ -213,7 +212,7 @@ func NebulaDownload() (err error) {
 
 	err = os.Chmod(NebulaExecutable(), 0755)
 	if err != nil {
-		Cfg.Logger.Error("Can't change permissions for Nebula binary",
+		Cfg.Logger.Error("can't change permissions for Nebula binary",
 			zap.String("Path", NebulaExecutable()),
 			zap.Error(err))
 		return err
@@ -221,7 +220,7 @@ func NebulaDownload() (err error) {
 
 	resp, err := http.Get(nebulaDownloadLink())
 	if err != nil {
-		Cfg.Logger.Error("Can't download Nebula binary",
+		Cfg.Logger.Error("can't download Nebula binary",
 			zap.String("Url", nebulaDownloadLink()),
 			zap.Error(err))
 		return err
@@ -229,12 +228,12 @@ func NebulaDownload() (err error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Failed download Nebula: %s", resp.Status)
+		return fmt.Errorf("failed download Nebula: %s", resp.Status)
 	}
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
-		Cfg.Logger.Error("Can't write Nebula binary",
+		Cfg.Logger.Error("can't write Nebula binary",
 			zap.String("Url", nebulaDownloadLink()),
 			zap.String("Path", NebulaExecutable()),
 			zap.Error(err))

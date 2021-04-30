@@ -132,8 +132,12 @@ func startClient(redirect bool) {
 	defer conn.Close()
 
 	client := nerf.NewServerClient(conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
 	request := &nerf.Request{Token: &nerf.Cfg.Token, Login: &nerf.Cfg.Login}
-	response, err := client.Connect(context.Background(), request)
+	response, err := client.Connect(ctx, request)
 	if err != nil {
 		nerf.Cfg.Logger.Fatal(
 			"can't connect to gRPC server",
@@ -198,7 +202,7 @@ func startClient(redirect bool) {
 	}
 
 	<-done
-	notify, err := client.Disconnect(context.Background(), &nerf.Notify{Login: &nerf.Cfg.Login})
+	notify, err := client.Disconnect(ctx, &nerf.Notify{Login: &nerf.Cfg.Login})
 	if err != nil {
 		nerf.Cfg.Logger.Error(
 			"disconnect",

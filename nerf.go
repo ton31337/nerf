@@ -3,7 +3,6 @@ package nerf
 import (
 	"context"
 	"fmt"
-	"log"
 	math "math"
 	"net"
 	"time"
@@ -63,10 +62,10 @@ type Teams struct {
 // Ping get timestamp in milliseconds
 func (s *Server) Ping(ctx context.Context, in *PingRequest) (*PingResponse, error) {
 	if *in.Login == "" {
-		return nil, fmt.Errorf("Failed gRPC ping request")
+		return nil, fmt.Errorf("failed gRPC ping request")
 	}
 
-	Cfg.Logger.Debug("Got ping request", zap.String("Login", *in.Login))
+	Cfg.Logger.Debug("got ping request", zap.String("Login", *in.Login))
 
 	response := time.Now().Round(time.Millisecond).UnixNano() / 1e6
 	return &PingResponse{Data: &response}, nil
@@ -139,10 +138,10 @@ func (s *Server) Disconnect(ctx context.Context, in *Notify) (*google_protobuf.E
 	var err error
 
 	if *in.Login == "" {
-		err = fmt.Errorf("Failed gRPC disconnect request")
+		err = fmt.Errorf("failed gRPC disconnect request")
 	}
 
-	Cfg.Logger.Debug("Disconnect", zap.String("Login", *in.Login))
+	Cfg.Logger.Debug("disconnect", zap.String("Login", *in.Login))
 
 	return &empty.Empty{}, err
 }
@@ -150,10 +149,10 @@ func (s *Server) Disconnect(ctx context.Context, in *Notify) (*google_protobuf.E
 // Connect - connects to the server which generates config.yml for Nebula
 func (s *Server) Connect(ctx context.Context, in *Request) (*Response, error) {
 	if *in.Login == "" {
-		return nil, fmt.Errorf("Failed gRPC certificate request")
+		return nil, fmt.Errorf("failed gRPC certificate request")
 	}
 
-	Cfg.Logger.Debug("Connect", zap.String("Login", *in.Login))
+	Cfg.Logger.Debug("connect", zap.String("Login", *in.Login))
 
 	token := &TokenSource{
 		AccessToken: *in.Token,
@@ -162,12 +161,12 @@ func (s *Server) Connect(ctx context.Context, in *Request) (*Response, error) {
 	client := github.NewClient(oclient)
 	user, _, err := client.Users.Get(context.Background(), "")
 	if err != nil {
-		return nil, fmt.Errorf("Failed validate login %s(%s): %s\n", user, *in.Login, err)
+		return nil, fmt.Errorf("failed validate login %s(%s): %s\n", user, *in.Login, err)
 	}
 
 	userTeams := teamsByUser(*user.Login)
 	if len(userTeams) == 0 {
-		Cfg.Logger.Debug("Teams not found", zap.String("Login", *user.Login))
+		Cfg.Logger.Debug("teams not found", zap.String("Login", *user.Login))
 		return nil, fmt.Errorf("No teams founds")
 	}
 
@@ -177,13 +176,13 @@ func (s *Server) Connect(ctx context.Context, in *Request) (*Response, error) {
 	config, err := NebulaGenerateConfig(userTeams)
 	if err != nil {
 		Cfg.Logger.Error(
-			"Can't generate config for Nebula",
+			"can't generate config for Nebula",
 			zap.String("Login", *user.Login),
 			zap.Strings("Teams", userTeams),
 		)
 	}
 
-	Cfg.Logger.Debug("Teams found",
+	Cfg.Logger.Debug("teams found",
 		zap.String("Login", *user.Login),
 		zap.String("ClientIP", clientIP),
 		zap.Strings("Teams", userTeams))
@@ -198,9 +197,13 @@ func (s *Server) Connect(ctx context.Context, in *Request) (*Response, error) {
 
 func probeEndpoint(remoteHost string) int64 {
 	start := time.Now()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
 	conn, err := grpc.Dial(remoteHost+":9000", grpc.WithInsecure())
 	if err != nil {
-		Cfg.Logger.Error("Failed connecting to gRPC",
+		Cfg.Logger.Error("failed connecting to gRPC",
 			zap.String("RemoteHost", remoteHost),
 			zap.Error(err))
 	}
@@ -209,7 +212,7 @@ func probeEndpoint(remoteHost string) int64 {
 	client := NewServerClient(conn)
 	data := start.UnixNano()
 	request := &PingRequest{Data: &data, Login: &Cfg.Login}
-	response, err := client.Ping(context.Background(), request)
+	response, err := client.Ping(ctx, request)
 	if err != nil || *response.Data == 0 {
 		return math.MaxInt64
 	}
@@ -223,7 +226,7 @@ func GetVPNEndpoints() {
 		PreferGo: true,
 		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
 			d := net.Dialer{
-				Timeout: time.Millisecond * time.Duration(10000),
+				Timeout: 3 * time.Second,
 			}
 			return d.DialContext(ctx, "udp", "1.1.1.1:53")
 		},
@@ -231,17 +234,17 @@ func GetVPNEndpoints() {
 
 	_, srvRecords, err := r.LookupSRV(context.Background(), "vpn", "udp", DNSAutoDiscoverZone)
 	if err != nil {
-		log.Fatalf("Failed retrieving VPN endpoints: %s\n", err)
+		Cfg.Logger.Fatal("no available gRPC endpoints found (DNS SRV)", zap.Error(err))
 	}
 
 	for _, record := range srvRecords {
 		txtRecords, err := r.LookupTXT(context.Background(), record.Target)
 		if err != nil || len(txtRecords) == 0 {
-			log.Fatalf("Failed retrieving VPN endpoints (DNS TXT): %s\n", err)
+			Cfg.Logger.Fatal("no available endpoint's data found (DNS TXT)", zap.Error(err))
 		}
 		aRecords, err := r.LookupHost(context.Background(), record.Target)
 		if err != nil || len(aRecords) == 0 {
-			log.Fatalf("Failed retrieving VPN endpoints (DNS A): %s\n", err)
+			Cfg.Logger.Fatal("no available endpoint's data found (DNS A)", zap.Error(err))
 		}
 		endpoint := Endpoint{
 			Description: txtRecords[0],
@@ -265,7 +268,7 @@ func GetFastestEndpoint() Endpoint {
 			fastestEndpoint = e
 		}
 		Cfg.Logger.Debug(
-			"Probing endpoint",
+			"probing endpoint",
 			zap.String("RemoteIP", e.RemoteIP),
 			zap.String("RemoteHost", e.RemoteHost),
 			zap.String("Description", e.Description),
