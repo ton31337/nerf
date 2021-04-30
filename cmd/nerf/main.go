@@ -110,14 +110,23 @@ func startClient(redirect bool) {
 		zap.String("Description", e.Description))
 
 	if err := nerf.NebulaAddLightHouseStaticRoute(&e); err != nil {
-		nerf.Cfg.Logger.Fatal("can't create route", zap.String("destination", e.RemoteIP), zap.Error(err))
+		nerf.Cfg.Logger.Fatal(
+			"can't create route",
+			zap.String("destination", e.RemoteIP),
+			zap.Error(err),
+		)
 	}
 
 	nerf.Cfg.Logger.Debug("authorized", zap.String("login", nerf.Cfg.Login))
 
 	conn, err := grpc.Dial(e.RemoteHost+":9000", grpc.WithInsecure())
 	if err != nil {
-		nerf.Cfg.Logger.Fatal("can't connect to gRPC server", zap.Error(err), zap.String("remoteHost", e.RemoteHost), zap.String("description", e.Description))
+		nerf.Cfg.Logger.Fatal(
+			"can't connect to gRPC server",
+			zap.Error(err),
+			zap.String("remoteHost", e.RemoteHost),
+			zap.String("description", e.Description),
+		)
 	}
 
 	defer conn.Close()
@@ -126,7 +135,12 @@ func startClient(redirect bool) {
 	request := &nerf.Request{Token: &nerf.Cfg.Token, Login: &nerf.Cfg.Login}
 	response, err := client.Connect(context.Background(), request)
 	if err != nil {
-		nerf.Cfg.Logger.Fatal("can't connect to gRPC server", zap.Error(err), zap.String("remoteHost", e.RemoteHost), zap.String("description", e.Description))
+		nerf.Cfg.Logger.Fatal(
+			"can't connect to gRPC server",
+			zap.Error(err),
+			zap.String("remoteHost", e.RemoteHost),
+			zap.String("description", e.Description),
+		)
 	}
 
 	nerf.Cfg.Logger.Debug("connected to LightHouse",
@@ -175,7 +189,7 @@ func startClient(redirect bool) {
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt)
 
-	if err := nerf.NebulaSetNameServers(&e, *response.LightHouseIP); err != nil {
+	if err := nerf.NebulaSetNameServers(&e, []string{*response.LightHouseIP}, true); err != nil {
 		nerf.Cfg.Logger.Fatal("can't set custom DNS servers", zap.Error(err))
 	}
 
@@ -186,7 +200,14 @@ func startClient(redirect bool) {
 	<-done
 	notify, err := client.Disconnect(context.Background(), &nerf.Notify{Login: &nerf.Cfg.Login})
 	if err != nil {
-		nerf.Cfg.Logger.Error("Disconnect", zap.String("Login", nerf.Cfg.Login), zap.String("Response", notify.String()))
+		nerf.Cfg.Logger.Error(
+			"disconnect",
+			zap.String("Login", nerf.Cfg.Login),
+			zap.String("Response", notify.String()),
+		)
+	}
+	if err = nerf.NebulaSetNameServers(&e, nerf.Cfg.SavedNameServers, false); err != nil {
+		nerf.Cfg.Logger.Fatal("can't revert name servers", zap.Error(err))
 	}
 }
 

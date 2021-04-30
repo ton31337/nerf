@@ -30,14 +30,15 @@ var DNSAutoDiscoverZone string
 
 // Config struct to store all the relevant data for both client and server
 type Config struct {
-	Logger     *zap.Logger
-	OAuth      *oauth2.Config
-	Token      string
-	ListenAddr string
-	Login      string
-	Nebula     *Nebula
-	Teams      *Teams
-	Endpoints  map[string]Endpoint
+	Logger           *zap.Logger
+	OAuth            *oauth2.Config
+	Token            string
+	ListenAddr       string
+	Login            string
+	Nebula           *Nebula
+	Teams            *Teams
+	Endpoints        map[string]Endpoint
+	SavedNameServers []string
 }
 
 // Server interface for Protobuf service
@@ -307,5 +308,6 @@ func NewConfig() Config {
 			Members:   make(map[string][]string),
 			UpdatedAt: time.Now().Unix() - 24*3600,
 		},
+		SavedNameServers: []string{},
 	}
 }
