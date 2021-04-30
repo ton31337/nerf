@@ -243,9 +243,7 @@ func main() {
 	nerf.Cfg.Logger = logger
 
 	defer func() {
-		if err := nerf.Cfg.Logger.Sync(); err != nil {
-			panic("failed sync Logger")
-		}
+		_ = nerf.Cfg.Logger.Sync()
 	}()
 
 	if *server {
