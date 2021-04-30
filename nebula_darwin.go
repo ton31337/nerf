@@ -95,12 +95,5 @@ func NebulaAddLightHouseStaticRoute(e *Endpoint) error {
 			zap.Error(err))
 	}
 
-	if err := exec.Command("/sbin/route", "-n", "add", "-net", e.RemoteIP, defaultGw).Run(); err != nil {
-		Cfg.Logger.Error("Can't create a static route for gRPC server",
-			zap.String("RemoteIP", e.RemoteIP),
-			zap.Error(err))
-		return err
-	}
-
-	return nil
+	return exec.Command("/sbin/route", "-n", "add", "-net", e.RemoteIP, defaultGw).Run()
 }
