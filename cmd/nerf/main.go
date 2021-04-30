@@ -89,6 +89,81 @@ func startServer(lightHouse string) {
 	}
 }
 
+func startClient() {
+	err := nerf.NebulaDownload()
+	if err != nil {
+		if _, err := os.Stat(nerf.NebulaExecutable()); err != nil {
+			log.Fatalf("Failed installing Nebula: %s\n", err)
+		}
+	}
+
+	// Before probing all gRPC endpoints we MUST be authenticated.
+	// Otherwise, we can't continue and nothing happens.
+	nerf.Auth()
+	e := nerf.GetFastestEndpoint()
+	if e.RemoteHost == "" {
+		log.Fatalln("No available gRPC endpoints found")
+	}
+
+	if err := nerf.NebulaAddLightHouseStaticRoute(&e); err != nil {
+		log.Fatalf("Failed creating a static route to %s: %s\n", e.RemoteIP, err)
+	}
+
+	nerf.Cfg.Logger.Debug("Authorized", zap.String("Login", nerf.Cfg.Login))
+	nerf.Cfg.Logger.Debug("Using fastest gRPC endpoint",
+		zap.String("RemoteIP", e.RemoteIP),
+		zap.String("RemoteHost", e.RemoteHost),
+		zap.String("Description", e.Description))
+
+	conn, err := grpc.Dial(e.RemoteHost+":9000", grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("Failed conneting to gRPC %s(%s): %s\n", e.RemoteHost, e.Description, err)
+	}
+	defer conn.Close()
+
+	client := nerf.NewServerClient(conn)
+	request := &nerf.Request{Token: &nerf.Cfg.Token, Login: &nerf.Cfg.Login}
+	response, err := client.Connect(context.Background(), request)
+	if err != nil {
+		log.Fatalf("Failed calling remote gRPC %s(%s): %s\n", e.RemoteHost, e.Description, err)
+	}
+
+	nerf.Cfg.Logger.Debug("Connected",
+		zap.String("RemoteIP", e.RemoteIP),
+		zap.String("RemoteHost", e.RemoteHost),
+		zap.String("Description", e.Description),
+		zap.String("ClientIP", *response.ClientIP),
+		zap.String("LightHouseIP", *response.LightHouseIP),
+		zap.Strings("Teams", response.Teams))
+
+	out, err := os.Create(path.Join(nerf.NebulaDir(), "config.yml"))
+	if err != nil {
+		log.Fatalf("Failed creating config for Nebula: %s\n", err)
+	}
+
+	if _, err := out.WriteString(*response.Config); err != nil {
+		log.Fatalf("Failed writing config for Nebula: %s\n", err)
+	}
+	defer out.Close()
+
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt)
+
+	if err := nerf.NebulaSetNameServers(&e, *response.LightHouseIP); err != nil {
+		log.Fatalf("Failed setting custom name servers: %s\n", err)
+	}
+
+	if err := nerf.NebulaStart(); err != nil {
+		log.Fatalf("Failed starting Nebula client: %s\n", err)
+	}
+
+	<-done
+	notify, err := client.Disconnect(context.Background(), &nerf.Notify{Login: &nerf.Cfg.Login})
+	if err != nil {
+		nerf.Cfg.Logger.Error("Disconnect", zap.String("Login", nerf.Cfg.Login), zap.String("Response", notify.String()))
+	}
+}
+
 func main() {
 	server := flag.Bool("server", false, "Start gRPC server to generate config for Nebula")
 	lightHouse := flag.String("lighthouse", "", "Set the lighthouse. E.g.: <NebulaIP>:<PublicIP>")
@@ -127,77 +202,6 @@ func main() {
 	if *server {
 		startServer(*lightHouse)
 	} else {
-		err := nerf.NebulaDownload()
-		if err != nil {
-			if _, err := os.Stat(nerf.NebulaExecutable()); err != nil {
-				log.Fatalf("Failed installing Nebula: %s\n", err)
-			}
-		}
-
-		// Before probing all gRPC endpoints we MUST be authenticated.
-		// Otherwise, we can't continue and nothing happens.
-		nerf.Auth()
-		e := nerf.GetFastestEndpoint()
-		if e.RemoteHost == "" {
-			log.Fatalln("No available gRPC endpoints found")
-		}
-
-		if err := nerf.NebulaAddLightHouseStaticRoute(&e); err != nil {
-			log.Fatalf("Failed creating a static route to %s: %s\n", e.RemoteIP, err)
-		}
-
-		nerf.Cfg.Logger.Debug("Authorized", zap.String("Login", nerf.Cfg.Login))
-		nerf.Cfg.Logger.Debug("Using fastest gRPC endpoint",
-			zap.String("RemoteIP", e.RemoteIP),
-			zap.String("RemoteHost", e.RemoteHost),
-			zap.String("Description", e.Description))
-
-		conn, err := grpc.Dial(e.RemoteHost+":9000", grpc.WithInsecure())
-		if err != nil {
-			log.Fatalf("Failed conneting to gRPC %s(%s): %s\n", e.RemoteHost, e.Description, err)
-		}
-		defer conn.Close()
-
-		client := nerf.NewServerClient(conn)
-		request := &nerf.Request{Token: &nerf.Cfg.Token, Login: &nerf.Cfg.Login}
-		response, err := client.Connect(context.Background(), request)
-		if err != nil {
-			log.Fatalf("Failed calling remote gRPC %s(%s): %s\n", e.RemoteHost, e.Description, err)
-		}
-
-		nerf.Cfg.Logger.Debug("Connected",
-			zap.String("RemoteIP", e.RemoteIP),
-			zap.String("RemoteHost", e.RemoteHost),
-			zap.String("Description", e.Description),
-			zap.String("ClientIP", *response.ClientIP),
-			zap.String("LightHouseIP", *response.LightHouseIP),
-			zap.Strings("Teams", response.Teams))
-
-		out, err := os.Create(path.Join(nerf.NebulaDir(), "config.yml"))
-		if err != nil {
-			log.Fatalf("Failed creating config for Nebula: %s\n", err)
-		}
-
-		if _, err := out.WriteString(*response.Config); err != nil {
-			log.Fatalf("Failed writing config for Nebula: %s\n", err)
-		}
-		defer out.Close()
-
-		done := make(chan os.Signal, 1)
-		signal.Notify(done, os.Interrupt)
-
-		if err := nerf.NebulaSetNameServers(&e, *response.LightHouseIP); err != nil {
-			log.Fatalf("Failed setting custom name servers: %s\n", err)
-		}
-
-		if err := nerf.NebulaStart(); err != nil {
-			log.Fatalf("Failed starting Nebula client: %s\n", err)
-		}
-
-		<-done
-		notify, err := client.Disconnect(context.Background(), &nerf.Notify{Login: &nerf.Cfg.Login})
-		if err != nil {
-			nerf.Cfg.Logger.Error("Disconnect", zap.String("Login", nerf.Cfg.Login), zap.String("Response", notify.String()))
-		}
+		startClient()
 	}
 }
