@@ -1,7 +1,10 @@
 package nerf
 
 import (
+	"bufio"
+	fmt "fmt"
 	"net"
+	"os"
 	"os/exec"
 	"path"
 	"strings"
@@ -45,36 +48,82 @@ func nebulaDefaultGateway(e *Endpoint) (string, error) {
 	return defaultGw, nil
 }
 
+func nebulaGetNameServers() error {
+	var err error
+	var nameServers []string
+
+	file, err := os.Open("/etc/resolv.conf")
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if len(line) > 0 && line[0] == '#' {
+			continue
+		}
+
+		f := strings.Fields(line)
+		if len(f) < 1 {
+			continue
+		}
+
+		if f[0] == "nameserver" {
+			if net.ParseIP(f[1]) != nil {
+				nameServers = append(nameServers, f[1])
+			}
+		}
+	}
+
+	if len(nameServers) == 0 {
+		return fmt.Errorf("failed retrieving current name servers")
+	}
+
+	Cfg.Logger.Debug("saving current name servers", zap.Strings("NameServers", nameServers))
+
+	Cfg.SavedNameServers = nameServers
+
+	return err
+}
+
 // NebulaSetNameServers set name server for the client to self
 func NebulaSetNameServers(e *Endpoint, NameServers []string, save bool) error {
 	var err error
-	var lines []byte
+
+	if save {
+		if err = nebulaGetNameServers(); err != nil {
+			return err
+		}
+	}
 
 	cmd := exec.Command(
 		"networksetup",
 		"listallnetworkservices",
 	)
-	lines, err = cmd.CombinedOutput()
+	lines, err := cmd.CombinedOutput()
 	if err != nil {
-		Cfg.Logger.Error("Can't get network services",
-			zap.Error(err))
-		return err
+		return fmt.Errorf("failed 'networksetup listallnetworkservices'")
 	}
 
-	services := strings.Split(string(lines), "\n")
-	for _, service := range services {
-		if !strings.Contains(service, "Wi-Fi") || !strings.Contains(service, "Thunderbolt") ||
-			!strings.Contains(service, "USB") {
-			continue
-		}
-		if exec.Command("networksetup", "-setdnsservers", service, NameServer).Run() != nil {
-			Cfg.Logger.Error("Can't set name servers",
-				zap.String("NameServer1", NameServer),
-				zap.String("Domain", DNSAutoDiscoverZone),
-				zap.Error(err))
-			return err
+	for _, service := range strings.Split(string(lines), "\n") {
+		if strings.Contains(service, "Wi-Fi") || strings.Contains(service, "USB") || strings.Contains(service, "Thunderbolt") ||
+			strings.Contains(service, "Air") {
+			set_dns := exec.Command(
+				"networksetup",
+			)
+			set_dns.Args = append(
+				[]string{"networksetup", "-setdnsservers", service},
+				NameServers...)
+			if set_dns.Run() != nil {
+				Cfg.Logger.Error("can't set name servers",
+					zap.Strings("NameServers", NameServers),
+					zap.String("Domain", DNSAutoDiscoverZone),
+					zap.Error(err))
+				return err
+			}
 		}
 	}
+
+	Cfg.Logger.Debug("setting name servers", zap.Strings("NameServers", NameServers))
 
 	return err
 }
@@ -83,14 +132,14 @@ func NebulaSetNameServers(e *Endpoint, NameServers []string, save bool) error {
 func NebulaAddLightHouseStaticRoute(e *Endpoint) error {
 	defaultGw, err := nebulaDefaultGateway(e)
 	if err != nil {
-		Cfg.Logger.Error("Can't get route for gRPC server",
+		Cfg.Logger.Error("can't get route for gRPC server",
 			zap.String("RemoteIP", e.RemoteIP),
 			zap.Error(err))
 		return err
 	}
 
 	if err := exec.Command("/sbin/route", "-n", "delete", "-net", e.RemoteIP).Run(); err != nil {
-		Cfg.Logger.Error("Can't delete a static route for gRPC server",
+		Cfg.Logger.Error("can't delete a static route for gRPC server",
 			zap.String("RemoteIP", e.RemoteIP),
 			zap.Error(err))
 	}
