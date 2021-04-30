@@ -89,7 +89,7 @@ func startServer(lightHouse string) {
 	}
 }
 
-func startClient() {
+func startClient(redirect bool) {
 	err := nerf.NebulaDownload()
 	if err != nil {
 		if _, err := os.Stat(nerf.NebulaExecutable()); err != nil {
@@ -136,12 +136,40 @@ func startClient() {
 		zap.String("LightHouseIP", *response.LightHouseIP),
 		zap.Strings("Teams", response.Teams))
 
+	config := *response.Config
+
+	if !redirect {
+		configLines := strings.Split(config, "\n")
+		var filteredConfigLines []string
+		skipNext := false
+
+		for _, line := range configLines {
+
+			if skipNext {
+				skipNext = false
+				continue
+			}
+
+			if strings.Contains(line, "0.0.0.0/1") {
+				skipNext = true
+				continue
+			}
+
+			if strings.Contains(line, "128.0.0.0/1") {
+				skipNext = true
+				continue
+			}
+			filteredConfigLines = append(filteredConfigLines, line)
+		}
+		config = strings.Join(filteredConfigLines, "\n")
+	}
+
 	out, err := os.Create(path.Join(nerf.NebulaDir(), "config.yml"))
 	if err != nil {
 		log.Fatalf("Failed creating config for Nebula: %s\n", err)
 	}
 
-	if _, err := out.WriteString(*response.Config); err != nil {
+	if _, err := out.WriteString(config); err != nil {
 		log.Fatalf("Failed writing config for Nebula: %s\n", err)
 	}
 	defer out.Close()
@@ -172,6 +200,7 @@ func main() {
 		"info",
 		"Set the logging level - values are 'debug', 'info', 'warn', and 'error'",
 	)
+	redirectAll := flag.Bool("redirect-all", true, "Redirect all traffic through Nebula")
 	printUsage := flag.Bool("help", false, "Print command line usage")
 
 	flag.Parse()
@@ -202,6 +231,6 @@ func main() {
 	if *server {
 		startServer(*lightHouse)
 	} else {
-		startClient()
+		startClient(*redirectAll)
 	}
 }
