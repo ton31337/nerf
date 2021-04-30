@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -62,11 +61,11 @@ func startServer(lightHouse string) {
 	nerf.Cfg.Nebula.LightHouse.NebulaIP = lightHouseIPS[0]
 	nerf.Cfg.Nebula.LightHouse.PublicIP = lightHouseIPS[1]
 
-	nerf.Cfg.Logger.Debug("Nerf server started")
+	nerf.Cfg.Logger.Debug("Nerf server started", zap.String("lightHouse", lightHouse))
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", 9000))
 	if err != nil {
-		log.Fatalf("Failed to listen gRPC server: %v\n", err)
+		nerf.Cfg.Logger.Fatal("failed to listen gRPC server", zap.Error(err))
 	}
 
 	grpcServer := grpc.NewServer()
@@ -76,16 +75,16 @@ func startServer(lightHouse string) {
 		for range time.Tick(10 * time.Second) {
 			if (time.Now().Unix() - nerf.Cfg.Teams.UpdatedAt) > 3600 {
 				nerf.Cfg.Logger.Debug(
-					"Begin-Of-Sync Github Teams with local cache")
+					"begin-of-sync Github Teams with local cache")
 				nerf.SyncTeams()
 				nerf.Cfg.Logger.Debug(
-					"End-Of-Sync Github Teams with local cache")
+					"end-of-sync Github Teams with local cache")
 			}
 		}
 	}()
 
 	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("Failed to serve gRPC server: %v\n", err)
+		nerf.Cfg.Logger.Fatal("can't serve gRPC", zap.Error(err))
 	}
 }
 
@@ -93,7 +92,7 @@ func startClient(redirect bool) {
 	err := nerf.NebulaDownload()
 	if err != nil {
 		if _, err := os.Stat(nerf.NebulaExecutable()); err != nil {
-			log.Fatalf("Failed installing Nebula: %s\n", err)
+			nerf.Cfg.Logger.Fatal("can't install Nebula:", zap.Error(err))
 		}
 	}
 
@@ -102,36 +101,35 @@ func startClient(redirect bool) {
 	nerf.Auth()
 	e := nerf.GetFastestEndpoint()
 	if e.RemoteHost == "" {
-		log.Fatalln("No available gRPC endpoints found")
+		nerf.Cfg.Logger.Fatal("no available gRPC endpoints found")
 	}
 
-	if err := nerf.NebulaAddLightHouseStaticRoute(&e); err != nil {
-		log.Fatalf("Failed creating a static route to %s: %s\n", e.RemoteIP, err)
-	}
-
-	nerf.Cfg.Logger.Debug("Authorized", zap.String("Login", nerf.Cfg.Login))
-	nerf.Cfg.Logger.Debug("Using fastest gRPC endpoint",
+	nerf.Cfg.Logger.Debug("found fastest endpoint",
 		zap.String("RemoteIP", e.RemoteIP),
 		zap.String("RemoteHost", e.RemoteHost),
 		zap.String("Description", e.Description))
 
+	if err := nerf.NebulaAddLightHouseStaticRoute(&e); err != nil {
+		nerf.Cfg.Logger.Fatal("can't create route", zap.String("destination", e.RemoteIP), zap.Error(err))
+	}
+
+	nerf.Cfg.Logger.Debug("authorized", zap.String("login", nerf.Cfg.Login))
+
 	conn, err := grpc.Dial(e.RemoteHost+":9000", grpc.WithInsecure())
 	if err != nil {
-		log.Fatalf("Failed conneting to gRPC %s(%s): %s\n", e.RemoteHost, e.Description, err)
+		nerf.Cfg.Logger.Fatal("can't connect to gRPC server", zap.Error(err), zap.String("remoteHost", e.RemoteHost), zap.String("description", e.Description))
 	}
+
 	defer conn.Close()
 
 	client := nerf.NewServerClient(conn)
 	request := &nerf.Request{Token: &nerf.Cfg.Token, Login: &nerf.Cfg.Login}
 	response, err := client.Connect(context.Background(), request)
 	if err != nil {
-		log.Fatalf("Failed calling remote gRPC %s(%s): %s\n", e.RemoteHost, e.Description, err)
+		nerf.Cfg.Logger.Fatal("can't connect to gRPC server", zap.Error(err), zap.String("remoteHost", e.RemoteHost), zap.String("description", e.Description))
 	}
 
-	nerf.Cfg.Logger.Debug("Connected",
-		zap.String("RemoteIP", e.RemoteIP),
-		zap.String("RemoteHost", e.RemoteHost),
-		zap.String("Description", e.Description),
+	nerf.Cfg.Logger.Debug("connected to LightHouse",
 		zap.String("ClientIP", *response.ClientIP),
 		zap.String("LightHouseIP", *response.LightHouseIP),
 		zap.Strings("Teams", response.Teams))
@@ -166,11 +164,11 @@ func startClient(redirect bool) {
 
 	out, err := os.Create(path.Join(nerf.NebulaDir(), "config.yml"))
 	if err != nil {
-		log.Fatalf("Failed creating config for Nebula: %s\n", err)
+		nerf.Cfg.Logger.Fatal("can't create Nebula config", zap.Error(err))
 	}
 
 	if _, err := out.WriteString(config); err != nil {
-		log.Fatalf("Failed writing config for Nebula: %s\n", err)
+		nerf.Cfg.Logger.Fatal("can't write Nebula config", zap.Error(err))
 	}
 	defer out.Close()
 
@@ -178,11 +176,11 @@ func startClient(redirect bool) {
 	signal.Notify(done, os.Interrupt)
 
 	if err := nerf.NebulaSetNameServers(&e, *response.LightHouseIP); err != nil {
-		log.Fatalf("Failed setting custom name servers: %s\n", err)
+		nerf.Cfg.Logger.Fatal("can't set custom DNS servers", zap.Error(err))
 	}
 
 	if err := nerf.NebulaStart(); err != nil {
-		log.Fatalf("Failed starting Nebula client: %s\n", err)
+		nerf.Cfg.Logger.Fatal("can't start Nebula client", zap.Error(err))
 	}
 
 	<-done
@@ -222,9 +220,10 @@ func main() {
 	}.Build()
 
 	nerf.Cfg.Logger = logger
+
 	defer func() {
 		if err := nerf.Cfg.Logger.Sync(); err != nil {
-			log.Fatalln("Failed Logger sync")
+			panic("failed sync Logger")
 		}
 	}()
 
