@@ -100,6 +100,12 @@ func main() {
 	printUsage := flag.Bool("help", false, "Print command line usage")
 
 	flag.Parse()
+
+	if *printUsage {
+		flag.Usage()
+		os.Exit(0)
+	}
+
 	nerf.Cfg = nerf.NewConfig()
 
 	logger, _ := zap.Config{
@@ -193,10 +199,5 @@ func main() {
 		if err != nil {
 			nerf.Cfg.Logger.Error("Disconnect", zap.String("Login", nerf.Cfg.Login), zap.String("Response", notify.String()))
 		}
-	}
-
-	if *printUsage {
-		flag.Usage()
-		os.Exit(0)
 	}
 }
