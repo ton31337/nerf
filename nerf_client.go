@@ -116,6 +116,7 @@ func GetFastestEndpoint() Endpoint {
 	for _, e := range ClientCfg.Endpoints {
 		if e.Latency < latency {
 			fastestEndpoint = e
+			latency = e.Latency
 		}
 		ClientCfg.Logger.Debug(
 			"probing endpoint",
