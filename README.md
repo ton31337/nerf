@@ -38,5 +38,7 @@ The server is needed to generate config.yml for Nebula. To start a server type:
 ## Start a client
 
 ```
-sudo ./nerf
+chown root ./nerf
+chmod +s ./nerf
+./nerf
 ```
