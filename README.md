@@ -22,15 +22,17 @@ export OAUTH_MASTER_TOKEN=<masterToken>        # OAuth token with 'read:org' sco
 export OAUTH_ORGANIZATION=<githubOrganization> # Github organization
 export DNS_AUTODISCOVER_ZONE=<dnsZone>         # DNS zone to discover VPN endpoints. E.g.: example.org
 make check                                     # Run linters, formatters, etc.
-make all                                       # For multiple ARCHs
-make                                           # For Linux amd64 only
+make all                                       # For multiple ARCHs (clients)
+make                                           # For Linux amd64 only (client)
+make client                                    # For Linux amd64 only (client)
+make server                                    # For Linux amd64 only (server)
 ```
 
 ## Start a gRPC server
 
 The server is needed to generate config.yml for Nebula. To start a server type:
 ```
-./nerf -server -lighthouse 172.16.0.1:193.219.12.13
+./nerf-server -lighthouse 172.16.0.1:193.219.12.13
 ```
 
 ## Start a client

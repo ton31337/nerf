@@ -9,8 +9,8 @@
 *.so
 *.dylib
 /nerf.exe
-/nerf-darwin
 /nerf
+/nerf-server
 /build
 /github.com
 
