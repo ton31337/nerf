@@ -54,9 +54,9 @@ func nebulaGetNameServers() error {
 		return fmt.Errorf("failed retrieving current name servers")
 	}
 
-	Cfg.Logger.Debug("saving current name servers", zap.Strings("NameServers", nameServers))
+	ClientCfg.Logger.Debug("saving current name servers", zap.Strings("NameServers", nameServers))
 
-	Cfg.SavedNameServers = nameServers
+	ClientCfg.SavedNameServers = nameServers
 
 	return err
 }
@@ -74,7 +74,7 @@ func NebulaSetNameServers(e *Endpoint, NameServers []string, save bool) error {
 
 	routes, err := netlink.RouteGet(net.ParseIP(e.RemoteIP))
 	if err != nil {
-		Cfg.Logger.Error("can't get route for gRPC server",
+		ClientCfg.Logger.Error("can't get route for gRPC server",
 			zap.String("RemoteIP", e.RemoteIP),
 			zap.Error(err))
 		return err
@@ -82,7 +82,7 @@ func NebulaSetNameServers(e *Endpoint, NameServers []string, save bool) error {
 
 	device, err := netlink.LinkByIndex(routes[0].LinkIndex)
 	if err != nil {
-		Cfg.Logger.Error("can't get default interface by ifIndex",
+		ClientCfg.Logger.Error("can't get default interface by ifIndex",
 			zap.String("Dst", routes[0].Gw.String()),
 			zap.Int("ifIndex", routes[0].LinkIndex),
 			zap.Error(err))
@@ -109,14 +109,14 @@ func NebulaSetNameServers(e *Endpoint, NameServers []string, save bool) error {
 
 	err = cmd.Run()
 	if err != nil {
-		Cfg.Logger.Error("can't set name servers",
+		ClientCfg.Logger.Error("can't set name servers",
 			zap.Strings("NameServers", NameServers),
 			zap.String("Domain", DNSAutoDiscoverZone),
 			zap.Error(err))
 		return err
 	}
 
-	Cfg.Logger.Debug("setting name servers", zap.Strings("NameServers", NameServers))
+	ClientCfg.Logger.Debug("setting name servers", zap.Strings("NameServers", NameServers))
 
 	return err
 }
@@ -125,7 +125,7 @@ func NebulaSetNameServers(e *Endpoint, NameServers []string, save bool) error {
 func NebulaAddLightHouseStaticRoute(e *Endpoint) error {
 	routes, err := netlink.RouteGet(net.ParseIP(e.RemoteIP))
 	if err != nil {
-		Cfg.Logger.Error("can't get route for gRPC server",
+		ClientCfg.Logger.Error("can't get route for gRPC server",
 			zap.String("RemoteIP", e.RemoteIP),
 			zap.Error(err))
 		return err
@@ -143,7 +143,7 @@ func NebulaAddLightHouseStaticRoute(e *Endpoint) error {
 	}
 
 	if err := netlink.RouteDel(&nr); err != nil {
-		Cfg.Logger.Error("can't delete a static route for gRPC server",
+		ClientCfg.Logger.Error("can't delete a static route for gRPC server",
 			zap.String("RemoteIP", e.RemoteIP),
 			zap.Error(err))
 	}

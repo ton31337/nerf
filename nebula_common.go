@@ -106,7 +106,7 @@ firewall:
 		return "", err
 	}
 
-	if err := nebulaConfigTemplate.Execute(&generatedConfig, Cfg.Nebula); err != nil {
+	if err := nebulaConfigTemplate.Execute(&generatedConfig, ServerCfg.Nebula); err != nil {
 		return "", err
 	}
 
@@ -116,7 +116,7 @@ firewall:
 func nebulaIP2Int(ip string) uint32 {
 	var long uint32
 	if err := binary.Read(bytes.NewBuffer(net.ParseIP(ip).To4()), binary.BigEndian, &long); err != nil {
-		Cfg.Logger.Fatal("failed converting Nebula IP to integer", zap.Error(err))
+		ClientCfg.Logger.Fatal("failed converting Nebula IP to integer", zap.Error(err))
 	}
 	return long
 }
@@ -131,23 +131,23 @@ func int2NebulaIP(ip int64) string {
 
 // NebulaClientIP returns client's IP generated from Github login
 func NebulaClientIP() string {
-	clientIPHash := crc.CalculateCRC(crc.CCITT, []byte(Cfg.Login))
+	clientIPHash := crc.CalculateCRC(crc.CCITT, []byte(ServerCfg.Login))
 	clientIP := int64(nebulaIP2Int(nebulaSubnet()) + uint32(clientIPHash))
 	return int2NebulaIP(clientIP)
 }
 
 func nebulaSubnet() string {
-	return strings.Split(Cfg.Nebula.Subnet, "/")[0]
+	return strings.Split(ServerCfg.Nebula.Subnet, "/")[0]
 }
 
 func nebulaSubnetLen() string {
-	return strings.Split(Cfg.Nebula.Subnet, "/")[1]
+	return strings.Split(ServerCfg.Nebula.Subnet, "/")[1]
 }
 
 // NebulaGenerateCertificate generate ca.crt, client.crt, client.key for Nebula
 func NebulaGenerateCertificate(userTeams []string) {
-	crtPath := "/etc/nebula/certs/" + Cfg.Login + ".crt"
-	keyPath := "/etc/nebula/certs/" + Cfg.Login + ".key"
+	crtPath := "/etc/nebula/certs/" + ServerCfg.Login + ".crt"
+	keyPath := "/etc/nebula/certs/" + ServerCfg.Login + ".key"
 
 	if _, err := os.Stat(crtPath); err == nil {
 		os.Remove(crtPath)
@@ -158,7 +158,7 @@ func NebulaGenerateCertificate(userTeams []string) {
 	}
 
 	err := exec.Command("/usr/local/nebula/nebula-cert",
-		"sign", "-name", Cfg.Login,
+		"sign", "-name", ServerCfg.Login,
 		"-out-crt", crtPath,
 		"-out-key", keyPath,
 		"-ca-crt", "/etc/nebula/certs/ca.crt",
@@ -166,9 +166,9 @@ func NebulaGenerateCertificate(userTeams []string) {
 		"-ip", NebulaClientIP()+"/"+nebulaSubnetLen(), "-groups", strings.Join(userTeams, ","),
 		"-duration", "48h").Run()
 	if err != nil {
-		Cfg.Logger.Error(
+		ServerCfg.Logger.Error(
 			"Can't generate certificate for Nebula",
-			zap.String("Login", Cfg.Login),
+			zap.String("Login", ServerCfg.Login),
 			zap.Strings("Teams", userTeams),
 			zap.String("ClientIP", NebulaClientIP()),
 		)
@@ -176,22 +176,22 @@ func NebulaGenerateCertificate(userTeams []string) {
 
 	ca, err := ioutil.ReadFile("/etc/nebula/certs/ca.crt")
 	if err != nil {
-		Cfg.Logger.Fatal("failed retrieving CA certificate", zap.Error(err))
+		ServerCfg.Logger.Fatal("failed retrieving CA certificate", zap.Error(err))
 	}
 
 	crt, err := ioutil.ReadFile(crtPath)
 	if err != nil {
-		Cfg.Logger.Fatal("failed retrieving client certificate", zap.Error(err))
+		ServerCfg.Logger.Fatal("failed retrieving client certificate", zap.Error(err))
 	}
 
 	key, err := ioutil.ReadFile(keyPath)
 	if err != nil {
-		Cfg.Logger.Fatal("failed retrieving client key", zap.Error(err))
+		ServerCfg.Logger.Fatal("failed retrieving client key", zap.Error(err))
 	}
 
-	Cfg.Nebula.Certificate.Ca = string(ca)
-	Cfg.Nebula.Certificate.Crt = string(crt)
-	Cfg.Nebula.Certificate.Key = string(key)
+	ServerCfg.Nebula.Certificate.Ca = string(ca)
+	ServerCfg.Nebula.Certificate.Crt = string(crt)
+	ServerCfg.Nebula.Certificate.Key = string(key)
 }
 
 // NebulaDownload used to download Nebula binary
@@ -203,7 +203,7 @@ func NebulaDownload() (err error) {
 
 	out, err := os.Create(NebulaExecutable())
 	if err != nil {
-		Cfg.Logger.Error("can't create Nebula binary",
+		ClientCfg.Logger.Error("can't create Nebula binary",
 			zap.String("Path", NebulaExecutable()),
 			zap.Error(err))
 		return err
@@ -212,7 +212,7 @@ func NebulaDownload() (err error) {
 
 	err = os.Chmod(NebulaExecutable(), 0755)
 	if err != nil {
-		Cfg.Logger.Error("can't change permissions for Nebula binary",
+		ClientCfg.Logger.Error("can't change permissions for Nebula binary",
 			zap.String("Path", NebulaExecutable()),
 			zap.Error(err))
 		return err
@@ -220,7 +220,7 @@ func NebulaDownload() (err error) {
 
 	resp, err := http.Get(nebulaDownloadLink())
 	if err != nil {
-		Cfg.Logger.Error("can't download Nebula binary",
+		ClientCfg.Logger.Error("can't download Nebula binary",
 			zap.String("Url", nebulaDownloadLink()),
 			zap.Error(err))
 		return err
@@ -233,7 +233,7 @@ func NebulaDownload() (err error) {
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
-		Cfg.Logger.Error("can't write Nebula binary",
+		ClientCfg.Logger.Error("can't write Nebula binary",
 			zap.String("Url", nebulaDownloadLink()),
 			zap.String("Path", NebulaExecutable()),
 			zap.Error(err))

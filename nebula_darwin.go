@@ -78,9 +78,9 @@ func nebulaGetNameServers() error {
 		return fmt.Errorf("failed retrieving current name servers")
 	}
 
-	Cfg.Logger.Debug("saving current name servers", zap.Strings("NameServers", nameServers))
+	ClientCfg.Logger.Debug("saving current name servers", zap.Strings("NameServers", nameServers))
 
-	Cfg.SavedNameServers = nameServers
+	ClientCfg.SavedNameServers = nameServers
 
 	return err
 }
@@ -114,7 +114,7 @@ func NebulaSetNameServers(e *Endpoint, NameServers []string, save bool) error {
 				[]string{"networksetup", "-setdnsservers", service},
 				NameServers...)
 			if set_dns.Run() != nil {
-				Cfg.Logger.Error("can't set name servers",
+				ClientCfg.Logger.Error("can't set name servers",
 					zap.Strings("NameServers", NameServers),
 					zap.String("Domain", DNSAutoDiscoverZone),
 					zap.Error(err))
@@ -123,7 +123,7 @@ func NebulaSetNameServers(e *Endpoint, NameServers []string, save bool) error {
 		}
 	}
 
-	Cfg.Logger.Debug("setting name servers", zap.Strings("NameServers", NameServers))
+	ClientCfg.Logger.Debug("setting name servers", zap.Strings("NameServers", NameServers))
 
 	return err
 }
@@ -132,14 +132,14 @@ func NebulaSetNameServers(e *Endpoint, NameServers []string, save bool) error {
 func NebulaAddLightHouseStaticRoute(e *Endpoint) error {
 	defaultGw, err := nebulaDefaultGateway(e)
 	if err != nil {
-		Cfg.Logger.Error("can't get route for gRPC server",
+		ClientCfg.Logger.Error("can't get route for gRPC server",
 			zap.String("RemoteIP", e.RemoteIP),
 			zap.Error(err))
 		return err
 	}
 
 	if err := exec.Command("/sbin/route", "-n", "delete", "-net", e.RemoteIP).Run(); err != nil {
-		Cfg.Logger.Error("can't delete a static route for gRPC server",
+		ClientCfg.Logger.Error("can't delete a static route for gRPC server",
 			zap.String("RemoteIP", e.RemoteIP),
 			zap.Error(err))
 	}
