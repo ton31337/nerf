@@ -15,17 +15,24 @@ sequenceDiagram
 
 ## Compile
 
+### Server
+
+```
+export OAUTH_MASTER_TOKEN=<masterToken>        # OAuth token with 'read:org' scope
+export OAUTH_ORGANIZATION=<githubOrganization> # Github organization
+make check                                     # Run linters, formatters, etc.
+make server                                    # For Linux amd64 only
+```
+
+### Client
+
 ```
 export OAUTH_CLIENT_ID=<clientID>              # OAuth application client id with 'user:email' scope
 export OAUTH_CLIENT_SECRET=<clientSecret>      # OAuth application client secret
-export OAUTH_MASTER_TOKEN=<masterToken>        # OAuth token with 'read:org' scope
-export OAUTH_ORGANIZATION=<githubOrganization> # Github organization
 export DNS_AUTODISCOVER_ZONE=<dnsZone>         # DNS zone to discover VPN endpoints. E.g.: example.org
 make check                                     # Run linters, formatters, etc.
-make all                                       # For multiple ARCHs (clients)
-make                                           # For Linux amd64 only (client)
-make client                                    # For Linux amd64 only (client)
-make server                                    # For Linux amd64 only (server)
+make all                                       # For multiple ARCHs
+make client                                    # For Linux amd64 only
 ```
 
 ## Start a gRPC server
