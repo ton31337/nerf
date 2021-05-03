@@ -35,14 +35,39 @@ make all                                       # For multiple ARCHs
 make client                                    # For Linux amd64 only
 ```
 
-## Start a gRPC server
+## Start
+
+### Server
+
+```
+Usage of ./nerf-server:
+  -help
+    	Print command line usage
+  -lighthouse string
+    	Set the lighthouse. E.g.: <NebulaIP>:<PublicIP>
+  -log-level string
+    	Set the logging level - values are 'debug', 'info', 'warn', and 'error' (default "info")
+```
 
 The server is needed to generate config.yml for Nebula. To start a server type:
 ```
 ./nerf-server -lighthouse 172.16.0.1:193.219.12.13
 ```
 
-## Start a client
+### Client
+
+```
+Usage of ./nerf:
+  -help
+    	Print command line usage
+  -log-level string
+    	Set the logging level - values are 'debug', 'info', 'warn', and 'error' (default "info")
+  -redirect-all
+    	Redirect all traffic through Nebula (default true)
+```
+
+The client MUST be with SUID bit set because of privileged user permissions to handle routes, DNS,
+interfaces:
 
 ```
 chown root ./nerf
