@@ -18,6 +18,10 @@ var ServerCfg ServerConfig
 // OauthMasterToken compile-time derived from -X github.com/ton31337/nerf.OauthMasterToken
 var OauthMasterToken string
 
+// OauthOrganization compile-time derived from -X github.com/ton31337/nerf.OauthOrganization
+// E.g.: example which will be used to retrieve teams by username from GitHub in this org.
+var OauthOrganization string
+
 // ServerConfig struct to store all the relevant data for a server
 type ServerConfig struct {
 	Logger *zap.Logger

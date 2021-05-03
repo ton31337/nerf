@@ -21,6 +21,10 @@ var OauthClientID string
 // OauthClientSecret compile-time derived from -X github.com/ton31337/nerf.OauthClientSecret
 var OauthClientSecret string
 
+// DNSAutoDiscoverZone compile-time derived from -Xgithub.com/ton31337/nerf.DNSAutoDiscoverZone
+// E.g.: example.com which will be combined to _vpn._udp.example.com SRV query
+var DNSAutoDiscoverZone string
+
 // ClientConfig struct to store all the relevant data for a client
 type ClientConfig struct {
 	Logger           *zap.Logger
