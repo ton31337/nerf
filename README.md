@@ -56,21 +56,17 @@ The server is needed to generate config.yml for Nebula. To start a server type:
 
 ### Client
 
-```
-Usage of ./nerf:
-  -help
-    	Print command line usage
-  -log-level string
-    	Set the logging level - values are 'debug', 'info', 'warn', and 'error' (default "info")
-  -redirect-all
-    	Redirect all traffic through Nebula (default true)
-```
+#### API for GUI
 
-The client MUST be with SUID bit set because of privileged user permissions to handle routes, DNS,
-interfaces:
+This is the gRPC API for GUI to talk
 
 ```
-chown root ./nerf
-chmod +s ./nerf
+sudo ./nerf-api -log-level debug
+sudo chmod 777 /tmp/nerf.sock
+```
+
+#### Start GUI
+
+```
 ./nerf
 ```

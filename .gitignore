@@ -10,6 +10,7 @@
 *.dylib
 /nerf.exe
 /nerf
+/nerf-api
 /nerf-server
 /build
 /github.com

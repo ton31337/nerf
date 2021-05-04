@@ -4,6 +4,11 @@ package nerf;
 
 import "google/protobuf/empty.proto";
 
+service Api {
+    rpc Connect (Request) returns (google.protobuf.Empty) {}
+    rpc Disconnect (Notify) returns (google.protobuf.Empty) {}
+}
+
 service Server {
     rpc Connect (Request) returns (Response) {}
     rpc Disconnect (Notify) returns (google.protobuf.Empty) {}
