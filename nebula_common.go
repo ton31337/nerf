@@ -51,8 +51,20 @@ func NewCertificate(Ca string, Crt string, Key string) *Certificate {
 }
 
 // NebulaStart starts Nebula instance in foreground
-func NebulaStart() error {
-	return exec.Command(NebulaExecutable(), "-config", path.Join(NebulaDir(), "config.yml")).Run()
+func NebulaStart() (int, error) {
+	var err error
+
+	cmd := exec.Command(NebulaExecutable(), "-config", path.Join(NebulaDir(), "config.yml"))
+	err = cmd.Start()
+	if err != nil {
+		return -1, err
+	}
+
+	go func() {
+		err = cmd.Wait()
+	}()
+
+	return cmd.Process.Pid, err
 }
 
 // NebulaGenerateConfig generate config.yml
@@ -116,7 +128,7 @@ firewall:
 func nebulaIP2Int(ip string) uint32 {
 	var long uint32
 	if err := binary.Read(bytes.NewBuffer(net.ParseIP(ip).To4()), binary.BigEndian, &long); err != nil {
-		ClientCfg.Logger.Fatal("failed converting Nebula IP to integer", zap.Error(err))
+		Cfg.Logger.Fatal("failed converting Nebula IP to integer", zap.Error(err))
 	}
 	return long
 }
@@ -203,7 +215,7 @@ func NebulaDownload() (err error) {
 
 	out, err := os.Create(NebulaExecutable())
 	if err != nil {
-		ClientCfg.Logger.Error("can't create Nebula binary",
+		Cfg.Logger.Error("can't create Nebula binary",
 			zap.String("Path", NebulaExecutable()),
 			zap.Error(err))
 		return err
@@ -212,7 +224,7 @@ func NebulaDownload() (err error) {
 
 	err = os.Chmod(NebulaExecutable(), 0755)
 	if err != nil {
-		ClientCfg.Logger.Error("can't change permissions for Nebula binary",
+		Cfg.Logger.Error("can't change permissions for Nebula binary",
 			zap.String("Path", NebulaExecutable()),
 			zap.Error(err))
 		return err
@@ -220,7 +232,7 @@ func NebulaDownload() (err error) {
 
 	resp, err := http.Get(nebulaDownloadLink())
 	if err != nil {
-		ClientCfg.Logger.Error("can't download Nebula binary",
+		Cfg.Logger.Error("can't download Nebula binary",
 			zap.String("Url", nebulaDownloadLink()),
 			zap.Error(err))
 		return err
@@ -233,7 +245,7 @@ func NebulaDownload() (err error) {
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
-		ClientCfg.Logger.Error("can't write Nebula binary",
+		Cfg.Logger.Error("can't write Nebula binary",
 			zap.String("Url", nebulaDownloadLink()),
 			zap.String("Path", NebulaExecutable()),
 			zap.Error(err))

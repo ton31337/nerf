@@ -6,6 +6,7 @@ require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible
+	github.com/getlantern/systray v1.1.0
 	github.com/golang/protobuf v1.4.2
 	github.com/google/go-cmp v0.5.4 // indirect
 	github.com/google/go-github v17.0.0+incompatible

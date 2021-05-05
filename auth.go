@@ -41,7 +41,7 @@ func (t *TokenSource) Token() (*oauth2.Token, error) {
 }
 
 func handleAuthMain(w http.ResponseWriter, r *http.Request) {
-	url := ClientCfg.OAuth.AuthCodeURL(authCodeState, oauth2.AccessTypeOnline)
+	url := Cfg.OAuth.AuthCodeURL(authCodeState, oauth2.AccessTypeOnline)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
@@ -66,19 +66,19 @@ func handleAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	code := r.FormValue("code")
-	token, err := ClientCfg.OAuth.Exchange(context.Background(), code)
+	token, err := Cfg.OAuth.Exchange(context.Background(), code)
 	if err != nil {
 		fmt.Printf("OAuth Exchange() failed with '%s'\n", err)
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
 
-	oauthClient := ClientCfg.OAuth.Client(context.Background(), token)
+	oauthClient := Cfg.OAuth.Client(context.Background(), token)
 	client := github.NewClient(oauthClient)
 	user, _, _ := client.Users.Get(context.Background(), "")
 
-	ClientCfg.Token = token.AccessToken
-	ClientCfg.Login = *user.Login
+	Cfg.Token = token.AccessToken
+	Cfg.Login = *user.Login
 	http.Redirect(w, r, "/done", http.StatusTemporaryRedirect)
 }
 
@@ -87,8 +87,6 @@ func openBrowser(url string) error {
 
 	os := runtime.GOOS
 	switch os {
-	case "windows":
-		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
 	case "darwin":
 		err = exec.Command("open", url).Start()
 	case "linux":
@@ -107,7 +105,7 @@ func openBrowser(url string) error {
 func Auth() {
 	router := http.NewServeMux()
 	server = &http.Server{
-		Addr:     ClientCfg.ListenAddr,
+		Addr:     Cfg.ListenAddr,
 		Handler:  router,
 		ErrorLog: nil,
 	}
@@ -118,7 +116,7 @@ func Auth() {
 
 	go func() {
 		<-time.After(1000 * time.Millisecond)
-		err := openBrowser("http://" + ClientCfg.ListenAddr)
+		err := openBrowser("http://" + Cfg.ListenAddr)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -134,7 +132,7 @@ func Auth() {
 		}
 	}()
 
-	fmt.Printf("Your browser has been opened to visit:\n\thttp://%s\n", ClientCfg.ListenAddr)
+	fmt.Printf("Your browser has been opened to visit:\n\thttp://%s\n", Cfg.ListenAddr)
 
 	<-done
 
