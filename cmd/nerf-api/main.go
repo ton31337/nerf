@@ -55,6 +55,11 @@ func main() {
 	if err != nil {
 		nerf.Cfg.Logger.Fatal("can't listen UNIX socket", zap.Error(err))
 	}
+
+	if os.Chmod(UnixSockAddr, 0777) != nil {
+		nerf.Cfg.Logger.Fatal("can't set write permissions for UNIX socket", zap.Error(err))
+	}
+
 	defer lis.Close()
 
 	grpcServer := grpc.NewServer()

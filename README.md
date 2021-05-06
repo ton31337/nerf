@@ -65,7 +65,6 @@ This is the gRPC API for GUI to talk
 sudo chown root ./nerf-api
 sudo chmod +s ./nerf-api
 ./nerf-api -log-level debug
-sudo chmod 777 /tmp/nerf.sock
 ```
 
 #### Start GUI
