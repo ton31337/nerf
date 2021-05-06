@@ -12,7 +12,7 @@
 /nerf
 /nerf-api
 /nerf-server
-/build
+/osx/Nerf.app/Contents/MacOS/nerf
 /github.com
 
 # Test binary, built with `go test -c`

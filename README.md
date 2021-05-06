@@ -38,8 +38,8 @@ export OAUTH_CLIENT_ID=<clientID>              # OAuth application client id wit
 export OAUTH_CLIENT_SECRET=<clientSecret>      # OAuth application client secret
 export DNS_AUTODISCOVER_ZONE=<dnsZone>         # DNS zone to discover VPN endpoints. E.g.: example.org
 make check                                     # Run linters, formatters, etc.
-make all                                       # For multiple ARCHs
-make client                                    # For Linux amd64 only
+make darwin-client                             # For MacOS
+make linux-client                              # For Linux
 ```
 
 ## Start
