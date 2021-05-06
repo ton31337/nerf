@@ -1,14 +1,20 @@
 ```
 sequenceDiagram
-    nerf->>nerf: Download Nebula to /opt/nebula/nebula
-    nerf->>GitHub: Authorize
-    GitHub-->>nerf: Authorized
-    nerf->>nerf: Autodiscover all VPN endpoints through DNS SRV record
-    nerf->>nerf: Probe all VPN endpoints via gRPC to find the fastest endpoint
-    nerf->>nerf-server: Get generated config.yml for Nebula with appropriate IP and Groups
+    nerf (GUI)->>nerf (GUI): Download Nebula to /opt/nebula/nebula
+    nerf (GUI)->>GitHub: Authorize
+    GitHub-->>nerf (GUI): Authorized
+    nerf (GUI)->>nerf-api: Connect (gRPC over UNIX socket)
+    nerf-api->>nerf-server: Connect (gRPC over TCP socket)
+    nerf-api->>nerf-api: Autodiscover all VPN endpoints through DNS SRV record
+    nerf-api->>nerf-api: Probe all VPN endpoints via gRPC to find the fastest endpoint
+    nerf-api->>nerf-server: Get generated config.yml for Nebula with appropriate IP and Groups
     nerf-server->>nerf-server: Generate config.yml
-    nerf-server-->>nerf: Send config.yml
-    nerf->>nebula: Start Nebula
+    nerf-server-->>nerf-api: Send config.yml
+    nerf-api->>nebula: Start Nebul
+    nerf (GUI)->>nerf-api: Disconnect
+    nerf-api->>nerf-server: Disconnect
+    nerf (GUI)->>nerf-api: Quit
+    nerf-api->>nerf-server: Disconnect
 ```
 
 ![](/sequence.png)
