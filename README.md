@@ -62,7 +62,9 @@ The server is needed to generate config.yml for Nebula. To start a server type:
 This is the gRPC API for GUI to talk
 
 ```
-sudo ./nerf-api -log-level debug
+sudo chown root ./nerf-api
+sudo chmod +s ./nerf-api
+./nerf-api -log-level debug
 sudo chmod 777 /tmp/nerf.sock
 ```
 
