@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -48,7 +47,7 @@ func main() {
 	}()
 
 	if err := os.RemoveAll(UnixSockAddr); err != nil {
-		log.Fatal(err)
+		nerf.Cfg.Logger.Fatal("can't remove UNIX socket", zap.Error(err))
 	}
 
 	lis, err := net.Listen("unix", UnixSockAddr)
