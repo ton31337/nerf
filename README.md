@@ -27,6 +27,7 @@ make server                                    # For Linux amd64 only
 ### Client
 
 ```
+sudo apt install libappindicator3-dev gir1.2-appindicator3-0.1
 export OAUTH_CLIENT_ID=<clientID>              # OAuth application client id with 'user:email' scope
 export OAUTH_CLIENT_SECRET=<clientSecret>      # OAuth application client secret
 export DNS_AUTODISCOVER_ZONE=<dnsZone>         # DNS zone to discover VPN endpoints. E.g.: example.org
