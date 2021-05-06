@@ -1,6 +1,0 @@
-#!/bin/bash
-
-launchctl load -w /Library/LaunchDaemons/com.ton31337.nerf.app.launchd.plist || \
-launchctl start /Library/LaunchDaemons/com.ton31337.nerf.app.launchd.plist
-
-exit 0

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -e
+
+/bin/launchctl load -w /Library/LaunchDaemons/com.ton31337.nerf.app.launchd.plist
