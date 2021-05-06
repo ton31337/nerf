@@ -18,7 +18,7 @@ func main() {
 
 func onReady() {
 	systray.SetIcon(icon.Data)
-	systray.SetTitle("Hostinger Network")
+	systray.SetTooltip("Hostinger Network")
 
 	mConnect := systray.AddMenuItem("Connect", "Connect to Hostinger Network")
 	mDisconnect := systray.AddMenuItem("Disconnect", "Disconnect from Hostinger Network")
