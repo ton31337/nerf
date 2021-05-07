@@ -17,7 +17,7 @@ sequenceDiagram
     nerf-api->>nerf-server: Disconnect
 ```
 
-![](/sequence.png)
+![](/doc/img/sequence.png)
 
 ## Compile
 
@@ -78,3 +78,25 @@ sudo chmod +s ./nerf-api
 ```
 ./nerf
 ```
+
+## Building application for OSX
+
+To build an application for OSX it's recommended to use [Packages](http://s.sudre.free.fr/Software/Packages/about.html) application (easiest).
+
+After running `make darwin-client`, the binary is copied to `osx/Nerf.app/Contents/MacOS/nerf`, and the whole structure is created for the app.
+
+In payload section right click on `Applications` and `Add files`. Add `osx/Nerf.app`.
+
+Also add `osx/LaunchDaemons/com.ton31337.nerf.app.launchd.plist` under `/Library/LaunchDaemons`.
+
+![](/doc/img/payload1.png)
+
+Below, under `/Library`, create a new directory `Services/Nerf` and put `./nerf-api`.
+
+It's IMPORTANT to set `SetUID` bit for the owner (root:wheel).
+
+![](/doc/img/payload2.png)
+
+Put pre-install and post-install scripts located in `osx/scripts` accordingly.
+
+![](/doc/img/scripts.png)
