@@ -44,20 +44,30 @@ func onReady() {
 		}
 	}
 
-	go func() {
+	mDisconnect.Hide()
+
+	go func(cfg *nerf.Config) {
 		for {
 			select {
 			case <-mConnect.ClickedCh:
 				connect()
+				if cfg.Connected == true {
+					mConnect.Hide()
+					mDisconnect.Show()
+				}
 			case <-mDisconnect.ClickedCh:
 				disconnect()
+				if cfg.Connected == false {
+					mConnect.Show()
+					mDisconnect.Hide()
+				}
 			case <-mQuitOrig.ClickedCh:
 				disconnect()
 				systray.Quit()
 				return
 			}
 		}
-	}()
+	}(&nerf.Cfg)
 }
 
 func connect() {
