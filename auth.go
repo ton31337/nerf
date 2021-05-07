@@ -19,7 +19,8 @@ import (
 const authorizedHTML = `
 <html>
 <body>
-Authorized. You can close this window.
+    <div style="width:400px; margin:0 auto; margin-top: 10%; font-size: 30px; font-family: Times New Roman, Times, serif; text-align: center;">Authorized.</div>
+    <div style="width:400px; margin:0 auto; font-size: 18px; font-family: Times New Roman, Times, serif; text-align: center;">You can close this window.</div>
 </body>
 </html>
 `
