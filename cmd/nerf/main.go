@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/getlantern/systray"
-	"github.com/getlantern/systray/example/icon"
 	"github.com/ton31337/nerf"
+	"github.com/ton31337/nerf/cmd/nerf/icons"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
@@ -17,7 +17,7 @@ func main() {
 }
 
 func onReady() {
-	systray.SetIcon(icon.Data)
+	systray.SetIcon(icons.Disconnected)
 	systray.SetTooltip("Hostinger Network")
 
 	mConnect := systray.AddMenuItem("Connect", "Connect to Hostinger Network")
@@ -84,6 +84,7 @@ func connect() {
 		nerf.Cfg.Logger.Fatal("can't connect to gRPC UNIX socket", zap.Error(err))
 	}
 
+	systray.SetIcon(icons.Connected)
 	nerf.Cfg.Connected = true
 }
 
@@ -105,5 +106,6 @@ func disconnect() {
 		nerf.Cfg.Logger.Fatal("can't connect to gRPC UNIX socket", zap.Error(err))
 	}
 
+	systray.SetIcon(icons.Disconnected)
 	nerf.Cfg.Connected = false
 }
