@@ -11,7 +11,7 @@
     <string>com.ton31337.nerf.app.launchd</string>
     <key>ProgramArguments</key>
     <array>
-      <string>/Library/Nerf/nerf-api</string>
+      <string>/Library/Services/Nerf/nerf-api</string>
       <string>-log-level</string>
       <string>debug</string>
     </array>
