@@ -51,13 +51,13 @@ func onReady() {
 			select {
 			case <-mConnect.ClickedCh:
 				connect()
-				if cfg.Connected == true {
+				if cfg.Connected {
 					mConnect.Hide()
 					mDisconnect.Show()
 				}
 			case <-mDisconnect.ClickedCh:
 				disconnect()
-				if cfg.Connected == false {
+				if !cfg.Connected {
 					mConnect.Show()
 					mDisconnect.Hide()
 				}
