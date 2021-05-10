@@ -42,6 +42,7 @@ type Config struct {
 	SavedNameServers []string
 	NebulaPid        *int
 	Connected        bool
+	ClientIP         string
 }
 
 // Api interface for Protobuf service
@@ -144,6 +145,8 @@ func startApi() {
 		zap.String("LightHouseIP", *response.LightHouseIP),
 		zap.Strings("Teams", response.Teams))
 
+	Cfg.ClientIP = *response.ClientIP
+
 	out, err := os.Create(path.Join(NebulaDir(), "config.yml"))
 	if err != nil {
 		Cfg.Logger.Fatal("can't create Nebula config", zap.Error(err))
@@ -174,15 +177,23 @@ func startApi() {
 }
 
 // Connect used to notify API about initiated connect
-func (s *Api) Connect(ctx context.Context, in *Request) (*google_protobuf.Empty, error) {
-	var err error
-
+func (s *Api) Connect(ctx context.Context, in *Request) (*ApiResponse, error) {
 	Cfg.Login = *in.Login
 	Cfg.Token = *in.Token
 
 	go startApi()
 
-	return &empty.Empty{}, err
+	// Wait for the ClientIP to be assigned from the server and endpoint's IP.
+	for {
+		if len(Cfg.ClientIP) > 0 && len(Cfg.CurrentEndpoint.RemoteIP) > 0 {
+			break
+		}
+	}
+
+	return &ApiResponse{
+		ClientIP: &Cfg.ClientIP,
+		RemoteIP: &Cfg.CurrentEndpoint.RemoteIP,
+	}, nil
 }
 
 // Disconnect used to notify API about initiated disconnect
@@ -214,5 +225,6 @@ func NewConfig() Config {
 		SavedNameServers: []string{},
 		NebulaPid:        nil,
 		Connected:        false,
+		ClientIP:         "",
 	}
 }

@@ -5,7 +5,7 @@ package nerf;
 import "google/protobuf/empty.proto";
 
 service Api {
-    rpc Connect (Request) returns (google.protobuf.Empty) {}
+    rpc Connect (Request) returns (ApiResponse) {}
     rpc Disconnect (Notify) returns (google.protobuf.Empty) {}
 }
 
@@ -34,6 +34,11 @@ message Response {
     required string clientIP = 2;
     repeated string teams = 3;
     required string lightHouseIP = 4;
+}
+
+message ApiResponse {
+    required string clientIP = 1;
+    required string remoteIP = 2;
 }
 
 message Notify {
