@@ -47,10 +47,11 @@ func main() {
 	}()
 
 	// Check if nerf-api is already running or not. Fail to start if exists.
-	_, err := net.Listen("unix", UnixSockAddr)
+	listen_check, err := net.Listen("unix", UnixSockAddr)
 	if err != nil {
 		nerf.Cfg.Logger.Fatal("nerf-api instance is already running", zap.Error(err))
 	}
+	defer listen_check.Close()
 
 	if err := os.RemoveAll(UnixSockAddr); err != nil {
 		nerf.Cfg.Logger.Fatal("can't remove UNIX socket", zap.Error(err))
