@@ -54,6 +54,7 @@ func onReady() {
 				if cfg.Connected {
 					mConnect.Hide()
 					mDisconnect.Show()
+					mDisconnect.SetTitle("Disconnect (" + cfg.CurrentEndpoint.RemoteIP + ")")
 				}
 			case <-mDisconnect.ClickedCh:
 				disconnect()
@@ -89,13 +90,15 @@ func connect() {
 	client := nerf.NewApiClient(conn)
 
 	request := &nerf.Request{Login: &nerf.Cfg.Login, Token: &nerf.Cfg.Token}
-	_, err = client.Connect(context.Background(), request)
+	response, err := client.Connect(context.Background(), request)
 	if err != nil {
 		nerf.Cfg.Logger.Fatal("can't connect to gRPC UNIX socket", zap.Error(err))
 	}
 
 	systray.SetIcon(icons.Connected)
 	nerf.Cfg.Connected = true
+	nerf.Cfg.CurrentEndpoint.RemoteIP = *response.RemoteIP
+	nerf.Cfg.ClientIP = *response.ClientIP
 }
 
 func disconnect() {
@@ -117,5 +120,6 @@ func disconnect() {
 	}
 
 	systray.SetIcon(icons.Disconnected)
+	systray.SetTitle("")
 	nerf.Cfg.Connected = false
 }
