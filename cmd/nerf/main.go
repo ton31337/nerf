@@ -120,6 +120,5 @@ func disconnect() {
 	}
 
 	systray.SetIcon(icons.Disconnected)
-	systray.SetTitle("")
 	nerf.Cfg.Connected = false
 }
