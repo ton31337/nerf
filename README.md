@@ -100,3 +100,9 @@ It's IMPORTANT to set `SetUID` bit for the owner (root:wheel).
 Put pre-install and post-install scripts located in `osx/scripts` accordingly.
 
 ![](/doc/img/scripts.png)
+
+### Installing a package
+
+```
+sudo installer -pkg nerf.pkg -target /
+```
