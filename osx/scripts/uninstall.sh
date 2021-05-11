@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 SERVICE="com.ton31337.nerf.app.launchd"
 SERVICE_FILE="/Library/LaunchDaemons/$SERVICE"
 
@@ -22,6 +20,7 @@ done
 sudo rm -f /Library/LaunchDaemons/$SERVICE.plist
 sudo rm -rf /Library/Services/Nerf
 sudo rm -rf /Applications/Nerf.app
+sudo rm -f /tmp/nerf.sock
 
 IFS=$'\n'
 for service in $(networksetup -listallnetworkservices);
@@ -33,5 +32,3 @@ do
 done
 
 echo "Uninstall completed!"
-
-exit 0
