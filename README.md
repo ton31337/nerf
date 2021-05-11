@@ -104,5 +104,11 @@ Put pre-install and post-install scripts located in `osx/scripts` accordingly.
 ### Installing a package
 
 ```
-sudo installer -pkg nerf.pkg -target /
+./osx/scripts/install.sh
+```
+
+### Uninstall a package
+
+```
+./osx/scripts/uninstall.sh
 ```
