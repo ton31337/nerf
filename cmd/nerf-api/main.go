@@ -36,7 +36,7 @@ func main() {
 		Level:       zap.NewAtomicLevelAt(nerf.StringToLogLevel(*logLevel)),
 		OutputPaths: []string{"stdout"},
 		EncoderConfig: zapcore.EncoderConfig{
-			TimeKey: "timestamp",
+			TimeKey:    "timestamp",
 			EncodeTime: zapcore.ISO8601TimeEncoder,
 			MessageKey: "message",
 		},
@@ -48,7 +48,16 @@ func main() {
 		_ = nerf.Cfg.Logger.Sync()
 	}()
 
-	// Check if nerf-api is already running or not. Fail to start if exists.
+	// Check if nerf-api is already running or not.
+	// If the socket is orphaned, check against it.
+	// If an error is returned, delete it.
+	_, err := net.Dial("unix", UnixSockAddr)
+	if err != nil {
+		if err := os.RemoveAll(UnixSockAddr); err != nil {
+			nerf.Cfg.Logger.Fatal("can't remove UNIX socket", zap.Error(err))
+		}
+	}
+
 	lis, err := net.Listen("unix", UnixSockAddr)
 	if err != nil {
 		nerf.Cfg.Logger.Fatal("nerf-api instance is already running", zap.Error(err))
