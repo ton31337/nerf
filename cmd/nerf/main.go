@@ -31,6 +31,8 @@ func onReady() {
 		Level:       zap.NewAtomicLevelAt(zapcore.DebugLevel),
 		OutputPaths: []string{"stdout"},
 		EncoderConfig: zapcore.EncoderConfig{
+			TimeKey: "timestamp",
+			EncodeTime: zapcore.ISO8601TimeEncoder,
 			MessageKey: "message",
 		},
 	}.Build()

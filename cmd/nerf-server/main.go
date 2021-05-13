@@ -102,6 +102,8 @@ func main() {
 		Level:       zap.NewAtomicLevelAt(nerf.StringToLogLevel(*logLevel)),
 		OutputPaths: []string{"stdout"},
 		EncoderConfig: zapcore.EncoderConfig{
+			TimeKey: "timestamp",
+			EncodeTime: zapcore.ISO8601TimeEncoder,
 			MessageKey: "message",
 		},
 	}.Build()
