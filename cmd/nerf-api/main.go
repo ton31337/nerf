@@ -49,26 +49,15 @@ func main() {
 	}()
 
 	// Check if nerf-api is already running or not. Fail to start if exists.
-	listen_check, err := net.Listen("unix", UnixSockAddr)
+	lis, err := net.Listen("unix", UnixSockAddr)
 	if err != nil {
 		nerf.Cfg.Logger.Fatal("nerf-api instance is already running", zap.Error(err))
 	}
-	defer listen_check.Close()
-
-	if err := os.RemoveAll(UnixSockAddr); err != nil {
-		nerf.Cfg.Logger.Fatal("can't remove UNIX socket", zap.Error(err))
-	}
-
-	lis, err := net.Listen("unix", UnixSockAddr)
-	if err != nil {
-		nerf.Cfg.Logger.Fatal("can't listen UNIX socket", zap.Error(err))
-	}
+	defer lis.Close()
 
 	if os.Chmod(UnixSockAddr, 0777) != nil {
 		nerf.Cfg.Logger.Fatal("can't set write permissions for UNIX socket", zap.Error(err))
 	}
-
-	defer lis.Close()
 
 	grpcServer := grpc.NewServer()
 	nerf.RegisterApiServer(grpcServer, &nerf.Api{})
