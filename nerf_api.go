@@ -91,12 +91,12 @@ func StopApi() {
 }
 
 func startApi() {
-	e := GetFastestEndpoint()
-	Cfg.CurrentEndpoint = &e
-
 	if Cfg.NebulaPid != nil {
 		Cfg.Logger.Fatal("Nebula instance already running")
 	}
+
+	e := GetFastestEndpoint()
+	Cfg.CurrentEndpoint = &e
 
 	if Cfg.CurrentEndpoint.RemoteHost == "" {
 		Cfg.Logger.Fatal("no available gRPC endpoints found")
