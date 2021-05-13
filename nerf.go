@@ -4,12 +4,32 @@ import (
 	"context"
 	math "math"
 	"net"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	grpc "google.golang.org/grpc"
 )
+
+type NerfMutex struct {
+	sync.Mutex
+	InUse bool
+}
+
+func (lock *NerfMutex) Lock() {
+	lock.Mutex.Lock()
+	lock.InUse = true
+}
+
+func (lock *NerfMutex) Unlock() {
+	lock.Mutex.Unlock()
+	lock.InUse = false
+}
+
+func (lock *NerfMutex) Locked() bool {
+	return lock.InUse
+}
 
 // Endpoint struct to store all the relevant data about gRPC server,
 // which generates and returns data for Nebula.

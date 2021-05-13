@@ -36,6 +36,7 @@ type Server struct {
 
 // Teams struct to store all the relevant data about Github Teams.
 type Teams struct {
+	Mutex     *NerfMutex
 	Members   map[string][]string
 	UpdatedAt int64
 }
@@ -188,6 +189,7 @@ func NewServerConfig() ServerConfig {
 		Teams: &Teams{
 			Members:   make(map[string][]string),
 			UpdatedAt: time.Now().Unix() - 24*3600,
+			Mutex:     &NerfMutex{InUse: true},
 		},
 	}
 }
