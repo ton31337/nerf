@@ -45,28 +45,37 @@ func startServer(lightHouse string) {
 
 	nerf.ServerCfg.Logger.Debug("Nerf server started", zap.String("lightHouse", lightHouse))
 
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", 9000))
-	if err != nil {
-		nerf.ServerCfg.Logger.Fatal("failed to listen gRPC server", zap.Error(err))
-	}
-
-	grpcServer := grpc.NewServer()
-	nerf.RegisterServerServer(grpcServer, &nerf.Server{})
-
 	go func() {
 		for range time.Tick(10 * time.Second) {
-			if (time.Now().Unix() - nerf.ServerCfg.Teams.UpdatedAt) > 3600 {
+			if (time.Now().Unix() - nerf.ServerCfg.Teams.UpdatedAt) > int64(time.Hour.Seconds()) {
+				nerf.ServerCfg.Teams.Mutex.Lock()
 				nerf.ServerCfg.Logger.Debug(
 					"begin-of-sync Github Teams with local cache")
 				nerf.SyncTeams()
 				nerf.ServerCfg.Logger.Debug(
 					"end-of-sync Github Teams with local cache")
+				nerf.ServerCfg.Teams.Mutex.Unlock()
 			}
 		}
 	}()
 
-	if err := grpcServer.Serve(lis); err != nil {
-		nerf.ServerCfg.Logger.Fatal("can't serve gRPC", zap.Error(err))
+	// Start gRPC server only when Teams are synced initially.
+	for {
+		if nerf.ServerCfg.Teams != nil && !nerf.ServerCfg.Teams.Mutex.Locked() {
+			lis, err := net.Listen("tcp", fmt.Sprintf(":%d", 9000))
+			if err != nil {
+				nerf.ServerCfg.Logger.Fatal("failed to listen gRPC server", zap.Error(err))
+			}
+
+			grpcServer := grpc.NewServer()
+			nerf.RegisterServerServer(grpcServer, &nerf.Server{})
+
+			if err = grpcServer.Serve(lis); err != nil {
+				nerf.ServerCfg.Logger.Fatal("can't serve gRPC", zap.Error(err))
+			}
+
+			break
+		}
 	}
 }
 
