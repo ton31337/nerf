@@ -96,7 +96,7 @@ func openBrowser(url string) error {
 		// Running Firefox as root in a regular user's session is not supported.
 		err = exec.Command("xdg-open", url).Start()
 	default:
-		err = fmt.Errorf("unsupported platform")
+		err = ErrUnsupportedPlatform
 	}
 
 	return err
@@ -106,9 +106,11 @@ func openBrowser(url string) error {
 func Auth() {
 	router := http.NewServeMux()
 	server = &http.Server{
-		Addr:     Cfg.ListenAddr,
-		Handler:  router,
-		ErrorLog: nil,
+		Addr:         Cfg.ListenAddr,
+		Handler:      router,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+		ErrorLog:     nil,
 	}
 
 	router.HandleFunc("/", handleAuthMain)

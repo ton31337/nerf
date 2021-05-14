@@ -2,7 +2,6 @@ package nerf
 
 import (
 	"bufio"
-	fmt "fmt"
 	"net"
 	"os"
 	"os/exec"
@@ -75,7 +74,7 @@ func nebulaGetNameServers() error {
 	}
 
 	if len(nameServers) == 0 {
-		return fmt.Errorf("failed retrieving current name servers")
+		return ErrRetrievingCurrentNameServers
 	}
 
 	Cfg.Logger.Debug("saving current name servers", zap.Strings("NameServers", nameServers))
@@ -101,7 +100,7 @@ func NebulaSetNameServers(e *Endpoint, NameServers []string, save bool) error {
 	)
 	lines, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed 'networksetup listallnetworkservices'")
+		return ErrListNetworkDevices
 	}
 
 	for _, service := range strings.Split(string(lines), "\n") {

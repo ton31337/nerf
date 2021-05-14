@@ -2,7 +2,6 @@ package nerf
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/golang/protobuf/ptypes/empty"
@@ -44,7 +43,7 @@ type Teams struct {
 // Ping get timestamp in milliseconds
 func (s *Server) Ping(ctx context.Context, in *PingRequest) (*PingResponse, error) {
 	if *in.Login == "" {
-		return nil, fmt.Errorf("failed gRPC ping request")
+		return nil, ErrGrpcPing
 	}
 
 	ServerCfg.Logger.Debug("got ping request", zap.String("Login", *in.Login))
@@ -120,7 +119,7 @@ func (s *Server) Disconnect(ctx context.Context, in *Notify) (*google_protobuf.E
 	var err error
 
 	if *in.Login == "" {
-		err = fmt.Errorf("failed gRPC disconnect request")
+		err = ErrGrpcDisconnect
 	}
 
 	ServerCfg.Logger.Debug("disconnect", zap.String("Login", *in.Login))
@@ -131,7 +130,7 @@ func (s *Server) Disconnect(ctx context.Context, in *Notify) (*google_protobuf.E
 // Connect - connects to the server which generates config.yml for Nebula
 func (s *Server) Connect(ctx context.Context, in *Request) (*Response, error) {
 	if *in.Login == "" {
-		return nil, fmt.Errorf("failed gRPC certificate request")
+		return nil, ErrGrpcConnect
 	}
 
 	ServerCfg.Logger.Debug("connect", zap.String("Login", *in.Login))
@@ -143,13 +142,13 @@ func (s *Server) Connect(ctx context.Context, in *Request) (*Response, error) {
 	client := github.NewClient(oclient)
 	user, _, err := client.Users.Get(context.Background(), "")
 	if err != nil {
-		return nil, fmt.Errorf("failed validate login %s(%s): %s\n", user, *in.Login, err)
+		return nil, ErrValidateLogin
 	}
 
 	userTeams := teamsByUser(*user.Login)
 	if len(userTeams) == 0 {
 		ServerCfg.Logger.Debug("teams not found", zap.String("Login", *user.Login))
-		return nil, fmt.Errorf("No teams founds")
+		return nil, ErrNoTeamsFound
 	}
 
 	ServerCfg.Login = *user.Login

@@ -43,10 +43,17 @@ type Config struct {
 	NebulaPid        *int
 	Connected        bool
 	ClientIP         string
+	LastError        error
 }
 
 // Api interface for Protobuf service
 type Api struct {
+}
+
+func cleanupApi() {
+	Cfg.NebulaPid = nil
+	Cfg.CurrentEndpoint = &Endpoint{}
+	Cfg.LastError = nil
 }
 
 // StopApi handled for disconnect and quit. Or even nerf-api crash interruption.
@@ -59,7 +66,7 @@ func StopApi() {
 
 	conn, err := grpc.Dial(Cfg.CurrentEndpoint.RemoteHost+":9000", grpc.WithInsecure())
 	if err != nil {
-		Cfg.Logger.Fatal(
+		Cfg.Logger.Error(
 			"can't connect to gRPC server",
 			zap.Error(err),
 		)
@@ -79,47 +86,31 @@ func StopApi() {
 		)
 	}
 	if err = NebulaSetNameServers(Cfg.CurrentEndpoint, Cfg.SavedNameServers, false); err != nil {
-		Cfg.Logger.Fatal("can't revert name servers", zap.Error(err))
+		Cfg.Logger.Error("can't revert name servers", zap.Error(err))
 	}
 
 	if err = syscall.Kill(*Cfg.NebulaPid, syscall.SIGKILL); err != nil {
-		Cfg.Logger.Fatal("can't stop Nebula", zap.Error(err))
+		Cfg.Logger.Error("can't stop Nebula", zap.Error(err))
 	}
 
-	Cfg.NebulaPid = nil
-	Cfg.CurrentEndpoint = &Endpoint{}
+	defer cleanupApi()
 }
 
-func startApi() {
+func getServerResponse() *Response {
 	if Cfg.NebulaPid != nil {
-		Cfg.Logger.Fatal("Nebula instance already running")
+		Cfg.LastError = ErrNebulaAlreadyRunning
 	}
 
 	e := GetFastestEndpoint()
 	Cfg.CurrentEndpoint = &e
 
-	if Cfg.CurrentEndpoint.RemoteHost == "" {
-		Cfg.Logger.Fatal("no available gRPC endpoints found")
-	}
-
 	if err := NebulaAddLightHouseStaticRoute(Cfg.CurrentEndpoint); err != nil {
-		Cfg.Logger.Fatal(
-			"can't create route",
-			zap.String("destination", e.RemoteIP),
-			zap.Error(err),
-		)
+		Cfg.LastError = ErrStaticRouteToNerf
 	}
-
-	Cfg.Logger.Debug("authorized", zap.String("login", Cfg.Login))
 
 	conn, err := grpc.Dial(Cfg.CurrentEndpoint.RemoteHost+":9000", grpc.WithInsecure())
 	if err != nil {
-		Cfg.Logger.Fatal(
-			"can't connect to gRPC server",
-			zap.Error(err),
-			zap.String("remoteHost", Cfg.CurrentEndpoint.RemoteHost),
-			zap.String("description", Cfg.CurrentEndpoint.Description),
-		)
+		Cfg.LastError = ErrGrpcCantConnect
 	}
 
 	defer conn.Close()
@@ -132,44 +123,58 @@ func startApi() {
 	request := &Request{Token: &Cfg.Token, Login: &Cfg.Login}
 	response, err := client.Connect(ctx, request)
 	if err != nil {
-		Cfg.Logger.Fatal(
-			"can't connect to gRPC server",
-			zap.Error(err),
-			zap.String("remoteHost", Cfg.CurrentEndpoint.RemoteHost),
-			zap.String("description", Cfg.CurrentEndpoint.Description),
-		)
+		Cfg.LastError = err
 	}
 
-	Cfg.Logger.Debug("connected to LightHouse",
-		zap.String("ClientIP", *response.ClientIP),
-		zap.String("LightHouseIP", *response.LightHouseIP),
-		zap.Strings("Teams", response.Teams))
+	return response
+}
 
-	Cfg.ClientIP = *response.ClientIP
+func startApi() {
+	Cfg.Logger.Debug("authorized", zap.String("login", Cfg.Login))
 
-	out, err := os.Create(path.Join(NebulaDir(), "config.yml"))
-	if err != nil {
-		Cfg.Logger.Fatal("can't create Nebula config", zap.Error(err))
-	}
-
-	if _, err := out.WriteString(*response.Config); err != nil {
-		Cfg.Logger.Fatal("can't write Nebula config", zap.Error(err))
-	}
-	defer out.Close()
+	response := getServerResponse()
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt)
 
-	if err := NebulaSetNameServers(&e, []string{*response.LightHouseIP}, true); err != nil {
-		Cfg.Logger.Fatal("can't set custom DNS servers", zap.Error(err))
-	}
+	// Retry every 10 second until we don't have any errors
+	for {
+		if Cfg.LastError != nil {
+			Cfg.Logger.Error("Retrying in 10 seconds", zap.Error(Cfg.LastError))
+			Cfg.LastError = nil
+			response = getServerResponse()
+		} else {
+			Cfg.Logger.Debug("connected to LightHouse",
+				zap.String("ClientIP", *response.ClientIP),
+				zap.String("LightHouseIP", *response.LightHouseIP),
+				zap.Strings("Teams", response.Teams))
 
-	pid, err := NebulaStart()
-	if err != nil {
-		Cfg.Logger.Fatal("can't start Nebula client", zap.Error(err))
-	}
+			Cfg.ClientIP = *response.ClientIP
 
-	Cfg.NebulaPid = &pid
+			out, err := os.Create(path.Join(NebulaDir(), "config.yml"))
+			if err != nil {
+				Cfg.LastError = ErrNebulaConfig
+			}
+
+			if _, err := out.WriteString(*response.Config); err != nil {
+				Cfg.LastError = ErrNebulaConfig
+			}
+			defer out.Close()
+
+			if err := NebulaSetNameServers(Cfg.CurrentEndpoint, []string{*response.LightHouseIP}, true); err != nil {
+				Cfg.LastError = ErrSetNameServers
+			}
+
+			pid, err := NebulaStart()
+			if err != nil {
+				Cfg.Logger.Fatal("can't start Nebula client", zap.Error(err))
+			}
+
+			Cfg.NebulaPid = &pid
+			break
+		}
+		time.Sleep(10 * time.Second)
+	}
 
 	<-done
 
@@ -226,5 +231,6 @@ func NewConfig() Config {
 		NebulaPid:        nil,
 		Connected:        false,
 		ClientIP:         "",
+		LastError:        nil,
 	}
 }

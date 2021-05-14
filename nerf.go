@@ -2,6 +2,7 @@ package nerf
 
 import (
 	"context"
+	"errors"
 	math "math"
 	"net"
 	"sync"
@@ -10,6 +11,25 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	grpc "google.golang.org/grpc"
+)
+
+var (
+	ErrUnsupportedPlatform          = errors.New("unsupported platform")
+	ErrRetrievingCurrentNameServers = errors.New("get current name servers")
+	ErrSetNameServers               = errors.New("set custom DNS servers")
+	ErrListNetworkDevices           = errors.New("list network devices")
+	ErrNoTeamsFound                 = errors.New("no teams founds")
+	ErrValidateLogin                = errors.New("validate login")
+	ErrNebulaDownload               = errors.New("download Nebula")
+	ErrNebulaAlreadyRunning         = errors.New("Nebula instance already running")
+	ErrNebulaConfig                 = errors.New("create Nebula config")
+	ErrNebulaClientStart            = errors.New("start Nebula client")
+	ErrStaticRouteToNerf            = errors.New("create static route for Nerf server")
+	ErrGrpcNoEndpoints              = errors.New("no available gRPC endpoints found")
+	ErrGrpcCantConnect              = errors.New("connect to gRPC server")
+	ErrGrpcPing                     = errors.New("gRPC ping request")
+	ErrGrpcConnect                  = errors.New("gRPC connect request")
+	ErrGrpcDisconnect               = errors.New("gRPC disconnect request")
 )
 
 type NerfMutex struct {
@@ -78,17 +98,17 @@ func getVPNEndpoints() {
 
 	_, srvRecords, err := r.LookupSRV(context.Background(), "vpn", "udp", DNSAutoDiscoverZone)
 	if err != nil {
-		Cfg.Logger.Fatal("no available gRPC endpoints found (DNS SRV)", zap.Error(err))
+		Cfg.LastError = ErrGrpcNoEndpoints
 	}
 
 	for _, record := range srvRecords {
 		txtRecords, err := r.LookupTXT(context.Background(), record.Target)
 		if err != nil || len(txtRecords) == 0 {
-			Cfg.Logger.Fatal("no available endpoint's data found (DNS TXT)", zap.Error(err))
+			Cfg.LastError = ErrGrpcNoEndpoints
 		}
 		aRecords, err := r.LookupHost(context.Background(), record.Target)
 		if err != nil || len(aRecords) == 0 {
-			Cfg.Logger.Fatal("no available endpoint's data found (DNS A)", zap.Error(err))
+			Cfg.LastError = ErrGrpcNoEndpoints
 		}
 		endpoint := Endpoint{
 			Description: txtRecords[0],

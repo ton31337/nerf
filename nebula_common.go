@@ -3,7 +3,6 @@ package nerf
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -240,7 +239,7 @@ func NebulaDownload() (err error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed download Nebula: %s", resp.Status)
+		return ErrNebulaDownload
 	}
 
 	_, err = io.Copy(out, resp.Body)

@@ -1,7 +1,6 @@
 package nerf
 
 import (
-	"fmt"
 	"net"
 	"os/exec"
 	"path"
@@ -36,7 +35,7 @@ func nebulaGetNameServers() error {
 	)
 	lines, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed 'nmcli device show'")
+		return ErrListNetworkDevices
 	}
 
 	for _, param := range strings.Split(string(lines), "\n") {
@@ -51,7 +50,7 @@ func nebulaGetNameServers() error {
 	}
 
 	if len(nameServers) == 0 {
-		return fmt.Errorf("failed retrieving current name servers")
+		return ErrRetrievingCurrentNameServers
 	}
 
 	Cfg.Logger.Debug("saving current name servers", zap.Strings("NameServers", nameServers))
