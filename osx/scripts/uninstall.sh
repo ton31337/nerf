@@ -11,6 +11,7 @@ do
         sudo pkill -9 nerf-api
         sudo launchctl stop $SERVICE
         sudo launchctl unload -w $SERVICE_FILE
+        sudo launchctl remove $SERVICE
         sleep 1
     else
         break
