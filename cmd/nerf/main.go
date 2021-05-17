@@ -53,6 +53,8 @@ func onReady() {
 			select {
 			case <-mConnect.ClickedCh:
 				systray.SetIcon(icons.Connecting)
+				mConnect.SetTitle("Connecting")
+				mConnect.Disable()
 				connect()
 				if cfg.Connected {
 					mConnect.Hide()
@@ -62,7 +64,9 @@ func onReady() {
 			case <-mDisconnect.ClickedCh:
 				disconnect()
 				if !cfg.Connected {
+					mConnect.SetTitle("Connect")
 					mConnect.Show()
+					mConnect.Enable()
 					mDisconnect.Hide()
 				}
 			case <-mQuitOrig.ClickedCh:
