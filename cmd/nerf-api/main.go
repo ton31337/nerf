@@ -44,6 +44,13 @@ func main() {
 
 	nerf.Cfg.Logger = logger
 
+	err := nerf.NebulaDownload()
+	if err != nil {
+		if _, err := os.Stat(nerf.NebulaExecutable()); err != nil {
+			nerf.Cfg.Logger.Fatal("can't install Nebula", zap.Error(err))
+		}
+	}
+
 	defer func() {
 		_ = nerf.Cfg.Logger.Sync()
 	}()
@@ -51,7 +58,7 @@ func main() {
 	// Check if nerf-api is already running or not.
 	// If the socket is orphaned, check against it.
 	// If an error is returned, delete it.
-	_, err := net.Dial("unix", UnixSockAddr)
+	_, err = net.Dial("unix", UnixSockAddr)
 	if err != nil {
 		if err := os.RemoveAll(UnixSockAddr); err != nil {
 			nerf.Cfg.Logger.Fatal("can't remove UNIX socket", zap.Error(err))
