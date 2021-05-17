@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"os"
 
 	"github.com/getlantern/systray"
 	"github.com/ton31337/nerf"
@@ -38,13 +37,6 @@ func onReady() {
 	}.Build()
 
 	nerf.Cfg.Logger = logger
-
-	err := nerf.NebulaDownload()
-	if err != nil {
-		if _, err := os.Stat(nerf.NebulaExecutable()); err != nil {
-			nerf.Cfg.Logger.Fatal("can't install Nebula", zap.Error(err))
-		}
-	}
 
 	mDisconnect.Hide()
 
