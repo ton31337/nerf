@@ -52,6 +52,7 @@ func onReady() {
 		for {
 			select {
 			case <-mConnect.ClickedCh:
+				systray.SetIcon(icons.Connecting)
 				connect()
 				if cfg.Connected {
 					mConnect.Hide()
