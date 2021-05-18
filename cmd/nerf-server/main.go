@@ -51,7 +51,7 @@ func startServer(lightHouse string) {
 				nerf.ServerCfg.Teams.Mutex.Lock()
 				nerf.ServerCfg.Logger.Debug(
 					"begin-of-sync Github Teams with local cache")
-				nerf.SyncTeams()
+				nerf.ServerCfg.Teams.Sync()
 				nerf.ServerCfg.Logger.Debug(
 					"end-of-sync Github Teams with local cache")
 				nerf.ServerCfg.Teams.Mutex.Unlock()

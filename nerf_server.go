@@ -53,7 +53,7 @@ func (s *Server) Ping(ctx context.Context, in *PingRequest) (*PingResponse, erro
 	return &PingResponse{Data: &response}, nil
 }
 
-func teamsByUser(login string) []string {
+func (t *Teams) User(login string) []string {
 	var teams []string
 
 	for team, users := range ServerCfg.Teams.Members {
@@ -69,7 +69,7 @@ func teamsByUser(login string) []string {
 
 // SyncTeams sync Github Teams with local cache
 // Scheduled every 10 seconds and updated every hour.
-func SyncTeams() {
+func (t *Teams) Sync() {
 	token := &TokenSource{
 		AccessToken: OauthMasterToken,
 	}
@@ -146,7 +146,7 @@ func (s *Server) Connect(ctx context.Context, in *Request) (*Response, error) {
 		return nil, fmt.Errorf("failed validate login %s(%s): %s\n", user, *in.Login, err)
 	}
 
-	userTeams := teamsByUser(*user.Login)
+	userTeams := ServerCfg.Teams.User(*user.Login)
 	if len(userTeams) == 0 {
 		ServerCfg.Logger.Debug("teams not found", zap.String("Login", *user.Login))
 		return nil, fmt.Errorf("No teams founds")
