@@ -20,6 +20,12 @@ func onReady() {
 	systray.SetIcon(icons.Disconnected)
 	systray.SetTooltip("Hostinger Network")
 
+	mStatus := systray.AddMenuItem("Status: Not connected", "Connection status")
+	mStatus.Disable()
+	mRemoteIP := systray.AddMenuItem("Remote IP:", "Remote IP address")
+	mRemoteIP.Disable()
+	mRemoteIP.Hide()
+	systray.AddSeparator()
 	mConnect := systray.AddMenuItem("Connect", "Connect to Hostinger Network")
 	mDisconnect := systray.AddMenuItem("Disconnect", "Disconnect from Hostinger Network")
 	mQuitOrig := systray.AddMenuItem("Quit", "Quit")
@@ -46,18 +52,21 @@ func onReady() {
 			select {
 			case <-mConnect.ClickedCh:
 				systray.SetIcon(icons.Connecting)
-				mConnect.SetTitle("Connecting")
-				mConnect.Disable()
+				mConnect.Hide()
+				mStatus.SetTitle("Status: Connecting")
 				connect()
 				if cfg.Connected {
-					mConnect.Hide()
+					mStatus.SetTitle("Status: Connected")
+					mRemoteIP.SetTitle("Remote IP: " + cfg.CurrentEndpoint.RemoteIP)
+					mRemoteIP.Show()
 					mDisconnect.Show()
-					mDisconnect.SetTitle("Disconnect (" + cfg.CurrentEndpoint.RemoteIP + ")")
+					mDisconnect.SetTitle("Disconnect")
 				}
 			case <-mDisconnect.ClickedCh:
 				disconnect()
 				if !cfg.Connected {
-					mConnect.SetTitle("Connect")
+					mStatus.SetTitle("Status: Not connected")
+					mRemoteIP.Hide()
 					mConnect.Show()
 					mConnect.Enable()
 					mDisconnect.Hide()
