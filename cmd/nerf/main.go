@@ -76,10 +76,10 @@ func connect() {
 		return
 	}
 
+	nerf.Auth()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-
-	nerf.Auth()
 
 	conn, err := grpc.DialContext(ctx,
 		"unix:/tmp/nerf.sock",
