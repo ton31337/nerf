@@ -43,10 +43,10 @@ type Endpoint struct {
 func probeEndpoint(remoteHost string) int64 {
 	start := time.Now()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	conn, err := grpc.DialContext(ctx, remoteHost+":9000", grpc.WithInsecure())
+	conn, err := grpc.Dial(remoteHost+":9000", grpc.WithInsecure())
 	if err != nil {
 		Cfg.Logger.Error("failed connecting to gRPC",
 			zap.String("RemoteHost", remoteHost),

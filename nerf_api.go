@@ -53,14 +53,11 @@ type Api struct {
 func StopApi() {
 	Cfg.Logger.Debug("disconnect", zap.String("Login", Cfg.Login))
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
 	if Cfg.NebulaPid == nil {
 		return
 	}
 
-	conn, err := grpc.DialContext(ctx, Cfg.CurrentEndpoint.RemoteHost+":9000", grpc.WithInsecure())
+	conn, err := grpc.Dial(Cfg.CurrentEndpoint.RemoteHost+":9000", grpc.WithInsecure())
 	if err != nil {
 		Cfg.Logger.Fatal(
 			"can't connect to gRPC server",
@@ -70,6 +67,9 @@ func StopApi() {
 
 	defer conn.Close()
 	client := NewServerClient(conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 
 	_, err = client.Disconnect(ctx, &Notify{Login: &Cfg.Login})
 	if err != nil {
@@ -91,9 +91,6 @@ func StopApi() {
 }
 
 func startApi() {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
 	if Cfg.NebulaPid != nil {
 		Cfg.Logger.Fatal("Nebula instance already running")
 	}
@@ -115,7 +112,7 @@ func startApi() {
 
 	Cfg.Logger.Debug("authorized", zap.String("login", Cfg.Login))
 
-	conn, err := grpc.DialContext(ctx, Cfg.CurrentEndpoint.RemoteHost+":9000", grpc.WithInsecure())
+	conn, err := grpc.Dial(Cfg.CurrentEndpoint.RemoteHost+":9000", grpc.WithInsecure())
 	if err != nil {
 		Cfg.Logger.Fatal(
 			"can't connect to gRPC server",
@@ -128,6 +125,9 @@ func startApi() {
 	defer conn.Close()
 
 	client := NewServerClient(conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 
 	request := &Request{Token: &Cfg.Token, Login: &Cfg.Login}
 	response, err := client.Connect(ctx, request)

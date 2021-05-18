@@ -137,8 +137,10 @@ func Auth() {
 
 	<-done
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer func() {
+		cancel()
+	}()
 
 	if err := server.Shutdown(ctx); err != nil {
 		log.Fatalf("Web server shutdown failed: %s\n", err)

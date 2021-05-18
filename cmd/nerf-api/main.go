@@ -1,12 +1,10 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"net"
 	"os"
 	"os/signal"
-	"time"
 
 	"github.com/ton31337/nerf"
 	"go.uber.org/zap"
@@ -17,8 +15,6 @@ import (
 const UnixSockAddr = "/tmp/nerf.sock"
 
 func main() {
-	var d net.Dialer
-
 	logLevel := flag.String(
 		"log-level",
 		"info",
@@ -59,13 +55,10 @@ func main() {
 		_ = nerf.Cfg.Logger.Sync()
 	}()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
 	// Check if nerf-api is already running or not.
 	// If the socket is orphaned, check against it.
 	// If an error is returned, delete it.
-	_, err = d.DialContext(ctx, "unix", UnixSockAddr)
+	_, err = net.Dial("unix", UnixSockAddr)
 	if err != nil {
 		if err := os.RemoveAll(UnixSockAddr); err != nil {
 			nerf.Cfg.Logger.Fatal("can't remove UNIX socket", zap.Error(err))
