@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"time"
 
 	"github.com/getlantern/systray"
 	"github.com/ton31337/nerf"
@@ -75,9 +76,12 @@ func connect() {
 		return
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	nerf.Auth()
 
-	conn, err := grpc.Dial(
+	conn, err := grpc.DialContext(ctx,
 		"unix:/tmp/nerf.sock",
 		grpc.WithInsecure())
 	if err != nil {
@@ -101,7 +105,10 @@ func connect() {
 }
 
 func disconnect() {
-	conn, err := grpc.Dial(
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	conn, err := grpc.DialContext(ctx,
 		"unix:/tmp/nerf.sock",
 		grpc.WithInsecure())
 	if err != nil {
