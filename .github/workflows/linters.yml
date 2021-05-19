@@ -2,7 +2,7 @@ name: Validation
 on:
   pull_request:
     paths:
-      - '.github/workflows/check.yml'
+      - '.github/workflows/linters.yml'
       - '**.go'
 jobs:
   check:
@@ -23,5 +23,11 @@ jobs:
             ${{ runner.os }}-gofmt1.16-
       - name: Install dependencies
         run: sudo apt install libappindicator3-dev gir1.2-appindicator3-0.1 -y
+      - name: Install goimports
+        run: |
+          go get golang.org/x/tools/cmd/goimports
+          go build golang.org/x/tools/cmd/goimports
+      - name: Install golines
+        run: go get -u github.com/segmentio/golines
       - name: Run make check
         run: make check
