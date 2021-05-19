@@ -51,7 +51,7 @@ type Api struct {
 
 // StopApi handled for disconnect and quit. Or even nerf-api crash interruption.
 func StopApi() {
-	Cfg.Logger.Debug("disconnect", zap.String("Login", Cfg.Login))
+	Cfg.Logger.Debug("disconnect", zap.String("Login", Cfg.Logi))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
