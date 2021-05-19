@@ -1,0 +1,12 @@
+[Unit]
+Description=Nerf API service
+Documentation=https://github.com/ton31337/nerf
+After=network.target
+
+[Service]
+ExecStart=/opt/nebula/nerf-api -log-level debug
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
