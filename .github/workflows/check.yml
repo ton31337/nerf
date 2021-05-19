@@ -1,4 +1,4 @@
-name: check
+name: Validation
 on:
   pull_request:
     paths:
@@ -6,24 +6,22 @@ on:
       - '**.go'
 jobs:
   check:
-    name: Check
+    name: Linters
     runs-on: ubuntu-latest
     steps:
-
-    - name: Set up Go 1.16
-      uses: actions/setup-go@v1
-      with:
-        go-version: 1.16
-      id: go
-
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v1
-
-    - uses: actions/cache@v1
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-gofmt1.16-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-gofmt1.16-
-    - name: Run make check
-      run: make check
+      - name: Set up Go 1.16
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.16
+        id: go
+      - uses: actions/checkout@v1
+      - uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-gofmt1.16-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-gofmt1.16-
+      - name: Install dependencies
+        run: sudo apt install libappindicator3-dev gir1.2-appindicator3-0.1 -y
+      - name: Run make check
+        run: make check
