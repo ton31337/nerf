@@ -19,8 +19,6 @@ jobs:
           export PATH=${PATH}:`go env GOPATH`/bin
           go get -u github.com/segmentio/golines
           golines -w ./
-      - name: Install golangci-lint
-        run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh
       - name: Run go fmt
         run: go fmt ./...
       - name: Run go fix
@@ -28,4 +26,4 @@ jobs:
       - name: Run go mod tidy
         run: go mod tidy
       - name: Run golangci-lint
-        run: .bin/golangci-lint run
+        uses: golangci/golangci-lint-action@v2
