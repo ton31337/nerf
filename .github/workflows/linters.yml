@@ -25,6 +25,6 @@ jobs:
       - name: Run go mod tidy
         run: go mod tidy
       - name: Run go lines
-        run: go lines -w ./
+        run: golines -w ./
       - name: Run golangci-lint
         run: .bin/golangci-lint run
