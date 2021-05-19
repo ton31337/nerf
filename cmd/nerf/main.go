@@ -12,6 +12,8 @@ import (
 	"google.golang.org/grpc"
 )
 
+var mStatus, mRemoteIP, mConnect, mDisconnect, mQuitOrig *systray.MenuItem
+
 func main() {
 	systray.Run(onReady, nil)
 }
@@ -20,15 +22,15 @@ func onReady() {
 	systray.SetIcon(icons.Disconnected)
 	systray.SetTooltip("Hostinger Network")
 
-	mStatus := systray.AddMenuItem("Status: Not connected", "Connection status")
+	mStatus = systray.AddMenuItem("Status: Not connected", "Connection status")
 	mStatus.Disable()
-	mRemoteIP := systray.AddMenuItem("Remote IP:", "Remote IP address")
+	mRemoteIP = systray.AddMenuItem("Remote IP:", "Remote IP address")
 	mRemoteIP.Disable()
 	mRemoteIP.Hide()
 	systray.AddSeparator()
-	mConnect := systray.AddMenuItem("Connect", "Connect to Hostinger Network")
-	mDisconnect := systray.AddMenuItem("Disconnect", "Disconnect from Hostinger Network")
-	mQuitOrig := systray.AddMenuItem("Quit", "Quit")
+	mConnect = systray.AddMenuItem("Connect", "Connect to Hostinger Network")
+	mDisconnect = systray.AddMenuItem("Disconnect", "Disconnect from Hostinger Network")
+	mQuitOrig = systray.AddMenuItem("Quit", "Quit")
 
 	nerf.Cfg = nerf.NewConfig()
 
@@ -51,25 +53,17 @@ func onReady() {
 		for {
 			select {
 			case <-mConnect.ClickedCh:
-				systray.SetIcon(icons.Connecting)
-				mConnect.Hide()
-				mStatus.SetTitle("Status: Connecting")
+				guiConnecting()
 				connect()
 				if cfg.Connected {
-					mStatus.SetTitle("Status: Connected")
-					mRemoteIP.SetTitle("Remote IP: " + cfg.CurrentEndpoint.RemoteIP)
-					mRemoteIP.Show()
-					mDisconnect.Show()
-					mDisconnect.SetTitle("Disconnect")
+					guiConnected(cfg.CurrentEndpoint.RemoteIP)
+				} else {
+					guiDisconnected()
 				}
 			case <-mDisconnect.ClickedCh:
 				disconnect()
 				if !cfg.Connected {
-					mStatus.SetTitle("Status: Not connected")
-					mRemoteIP.Hide()
-					mConnect.Show()
-					mConnect.Enable()
-					mDisconnect.Hide()
+					guiDisconnected()
 				}
 			case <-mQuitOrig.ClickedCh:
 				disconnect()
@@ -78,6 +72,30 @@ func onReady() {
 			}
 		}
 	}(&nerf.Cfg)
+}
+
+func guiConnected(RemoteIP string) {
+	systray.SetIcon(icons.Connected)
+	mStatus.SetTitle("Status: Connected")
+	mRemoteIP.SetTitle("Remote IP: " + RemoteIP)
+	mDisconnect.SetTitle("Disconnect")
+	mRemoteIP.Show()
+	mDisconnect.Show()
+}
+
+func guiDisconnected() {
+	systray.SetIcon(icons.Disconnected)
+	mStatus.SetTitle("Status: Not connected")
+	mRemoteIP.Hide()
+	mConnect.Show()
+	mConnect.Enable()
+	mDisconnect.Hide()
+}
+
+func guiConnecting() {
+	systray.SetIcon(icons.Connecting)
+	mStatus.SetTitle("Status: Connecting")
+	mConnect.Hide()
 }
 
 func connect() {
@@ -94,7 +112,8 @@ func connect() {
 		"unix:/tmp/nerf.sock",
 		grpc.WithInsecure())
 	if err != nil {
-		nerf.Cfg.Logger.Fatal("can't connect to gRPC UNIX socket", zap.Error(err))
+		nerf.Cfg.Logger.Error("can't connect to gRPC UNIX socket", zap.Error(err))
+		return
 	}
 
 	defer conn.Close()
@@ -104,7 +123,8 @@ func connect() {
 	request := &nerf.Request{Login: &nerf.Cfg.Login, Token: &nerf.Cfg.Token}
 	response, err := client.Connect(context.Background(), request)
 	if err != nil {
-		nerf.Cfg.Logger.Fatal("can't connect to gRPC UNIX socket", zap.Error(err))
+		nerf.Cfg.Logger.Error("can't connect to gRPC UNIX socket", zap.Error(err))
+		return
 	}
 
 	systray.SetIcon(icons.Connected)
@@ -121,7 +141,8 @@ func disconnect() {
 		"unix:/tmp/nerf.sock",
 		grpc.WithInsecure())
 	if err != nil {
-		nerf.Cfg.Logger.Fatal("can't connect to gRPC UNIX socket", zap.Error(err))
+		nerf.Cfg.Logger.Error("can't connect to gRPC UNIX socket", zap.Error(err))
+		return
 	}
 
 	defer conn.Close()
@@ -131,7 +152,8 @@ func disconnect() {
 	request := &nerf.Notify{Login: &nerf.Cfg.Login}
 	_, err = client.Disconnect(context.Background(), request)
 	if err != nil {
-		nerf.Cfg.Logger.Fatal("can't connect to gRPC UNIX socket", zap.Error(err))
+		nerf.Cfg.Logger.Error("can't connect to gRPC UNIX socket", zap.Error(err))
+		return
 	}
 
 	systray.SetIcon(icons.Disconnected)
