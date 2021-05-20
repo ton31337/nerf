@@ -13,9 +13,25 @@ import (
 	"google.golang.org/grpc"
 )
 
+const UnixSockAddr = "unix:/tmp/nerf.sock"
+
 var mStatus, mRemoteIP, mConnect, mDisconnect, mQuitOrig *systray.MenuItem
 var connectionTime time.Time
 var connectionTicker *time.Ticker
+
+func grpcConnection() (*grpc.ClientConn, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	connection, err := grpc.DialContext(ctx, UnixSockAddr, grpc.WithInsecure())
+	if err != nil {
+		nerf.Cfg.Logger.Error("can't connect to gRPC UNIX socket", zap.Error(err))
+		nerf.Cfg.Connected = false
+		return nil, err
+	}
+
+	return connection, nil
+}
 
 func main() {
 	systray.Run(onReady, nil)
@@ -80,17 +96,14 @@ func onReady() {
 func ping() {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	conn, err := grpc.DialContext(ctx,
-		"unix:/tmp/nerf.sock",
-		grpc.WithInsecure())
-	if err != nil {
-		nerf.Cfg.Logger.Error("can't connect to gRPC UNIX socket", zap.Error(err))
-		nerf.Cfg.Connected = false
-	}
+
+	conn, _ := grpcConnection()
+	defer conn.Close()
+
 	client := nerf.NewApiClient(conn)
 	data := time.Now().UnixNano()
 	request := &nerf.PingRequest{Data: &data, Login: &nerf.Cfg.Login}
-	_, err = client.Ping(ctx, request)
+	_, err := client.Ping(ctx, request)
 	if err != nil {
 		nerf.Cfg.Connected = false
 	}
@@ -150,22 +163,16 @@ func connect() {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	conn, err := grpc.DialContext(ctx,
-		"unix:/tmp/nerf.sock",
-		grpc.WithInsecure())
+	conn, err := grpcConnection()
 	if err != nil {
-		nerf.Cfg.Logger.Error("can't connect to gRPC UNIX socket", zap.Error(err))
 		return
 	}
-
 	defer conn.Close()
 
 	client := nerf.NewApiClient(conn)
-
 	request := &nerf.Request{Login: &nerf.Cfg.Login, Token: &nerf.Cfg.Token}
-	response, err := client.Connect(context.Background(), request)
+	response, err := client.Connect(ctx, request)
 	if err != nil {
-		nerf.Cfg.Logger.Error("can't connect to gRPC UNIX socket", zap.Error(err))
 		return
 	}
 
@@ -182,21 +189,19 @@ func disconnect() {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	conn, err := grpc.DialContext(ctx,
-		"unix:/tmp/nerf.sock",
-		grpc.WithInsecure())
+	conn, err := grpcConnection()
 	if err != nil {
-		nerf.Cfg.Logger.Error("can't connect to gRPC UNIX socket", zap.Error(err))
+		guiDisconnected()
+		return
 	}
-
 	defer conn.Close()
 
 	client := nerf.NewApiClient(conn)
-
 	request := &nerf.Notify{Login: &nerf.Cfg.Login}
-	_, err = client.Disconnect(context.Background(), request)
+	_, err = client.Disconnect(ctx, request)
 	if err != nil {
-		nerf.Cfg.Logger.Error("can't connect to gRPC UNIX socket", zap.Error(err))
+		guiDisconnected()
+		return
 	}
 
 	guiDisconnected()
