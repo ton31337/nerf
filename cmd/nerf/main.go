@@ -77,6 +77,25 @@ func onReady() {
 	}(&nerf.Cfg)
 }
 
+func ping() {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	conn, err := grpc.DialContext(ctx,
+		"unix:/tmp/nerf.sock",
+		grpc.WithInsecure())
+	if err != nil {
+		nerf.Cfg.Logger.Error("can't connect to gRPC UNIX socket", zap.Error(err))
+		nerf.Cfg.Connected = false
+	}
+	client := nerf.NewApiClient(conn)
+	data := time.Now().UnixNano()
+	request := &nerf.PingRequest{Data: &data, Login: &nerf.Cfg.Login}
+	_, err = client.Ping(ctx, request)
+	if err != nil {
+		nerf.Cfg.Connected = false
+	}
+}
+
 func guiConnected() {
 	systray.SetIcon(icons.Connected)
 	mStatus.SetTitle("Status: Connected")
@@ -88,12 +107,20 @@ func guiConnected() {
 	go func() {
 		for {
 			<-connectionTicker.C
+			ping()
 			if !nerf.Cfg.Connected {
-				connectionTicker.Stop()
+				disconnect()
 				return
 			}
 			connectionDuration := int(time.Since(connectionTime).Seconds())
-			mStatus.SetTitle("Status: Connected (" + fmt.Sprintf("%02d:%02d:%02d", connectionDuration/3600, (connectionDuration%3600)/60, connectionDuration%60) + ")")
+			mStatus.SetTitle(
+				"Status: Connected (" + fmt.Sprintf(
+					"%02d:%02d:%02d",
+					connectionDuration/3600,
+					(connectionDuration%3600)/60,
+					connectionDuration%60,
+				) + ")",
+			)
 		}
 	}()
 }
@@ -150,6 +177,8 @@ func connect() {
 }
 
 func disconnect() {
+	connectionTicker.Stop()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -158,7 +187,6 @@ func disconnect() {
 		grpc.WithInsecure())
 	if err != nil {
 		nerf.Cfg.Logger.Error("can't connect to gRPC UNIX socket", zap.Error(err))
-		return
 	}
 
 	defer conn.Close()
@@ -169,7 +197,6 @@ func disconnect() {
 	_, err = client.Disconnect(context.Background(), request)
 	if err != nil {
 		nerf.Cfg.Logger.Error("can't connect to gRPC UNIX socket", zap.Error(err))
-		return
 	}
 
 	guiDisconnected()
