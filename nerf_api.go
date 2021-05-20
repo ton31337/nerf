@@ -176,6 +176,11 @@ func startApi() {
 	StopApi()
 }
 
+func (s *Api) Ping(ctx context.Context, in *PingRequest) (*PingResponse, error) {
+	response := time.Now().Round(time.Millisecond).UnixNano() / 1e6
+	return &PingResponse{Data: &response}, nil
+}
+
 // Connect used to notify API about initiated connect
 func (s *Api) Connect(ctx context.Context, in *Request) (*ApiResponse, error) {
 	Cfg.Login = *in.Login
