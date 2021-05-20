@@ -88,6 +88,10 @@ func guiConnected() {
 	go func() {
 		for {
 			<-connectionTicker.C
+			if !nerf.Cfg.Connected {
+				connectionTicker.Stop()
+				return
+			}
 			connectionDuration := int(time.Since(connectionTime).Seconds())
 			mStatus.SetTitle("Status: Connected (" + fmt.Sprintf("%02d:%02d:%02d", connectionDuration/3600, (connectionDuration%3600)/60, connectionDuration%60) + ")")
 		}
@@ -101,7 +105,6 @@ func guiDisconnected() {
 	mConnect.Show()
 	mConnect.Enable()
 	mDisconnect.Hide()
-	connectionTicker.Stop()
 }
 
 func guiConnecting() {
