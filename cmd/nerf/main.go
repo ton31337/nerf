@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/getlantern/systray"
@@ -13,6 +14,8 @@ import (
 )
 
 var mStatus, mRemoteIP, mConnect, mDisconnect, mQuitOrig *systray.MenuItem
+var connectionTime time.Time
+var connectionTicker *time.Ticker
 
 func main() {
 	systray.Run(onReady, nil)
@@ -56,7 +59,7 @@ func onReady() {
 				guiConnecting()
 				connect()
 				if cfg.Connected {
-					guiConnected(cfg.CurrentEndpoint.RemoteIP)
+					guiConnected()
 				} else {
 					guiDisconnected()
 				}
@@ -74,13 +77,21 @@ func onReady() {
 	}(&nerf.Cfg)
 }
 
-func guiConnected(RemoteIP string) {
+func guiConnected() {
 	systray.SetIcon(icons.Connected)
 	mStatus.SetTitle("Status: Connected")
-	mRemoteIP.SetTitle("Remote IP: " + RemoteIP)
+	mRemoteIP.SetTitle("Remote IP: " + nerf.Cfg.CurrentEndpoint.RemoteIP)
 	mDisconnect.SetTitle("Disconnect")
 	mRemoteIP.Show()
 	mDisconnect.Show()
+	connectionTicker = time.NewTicker(1 * time.Second)
+	go func() {
+		for {
+			<-connectionTicker.C
+			connectionDuration := int(time.Since(connectionTime).Seconds())
+			mStatus.SetTitle("Status: Connected (" + fmt.Sprintf("%02d:%02d:%02d", connectionDuration/3600, (connectionDuration%3600)/60, connectionDuration%60) + ")")
+		}
+	}()
 }
 
 func guiDisconnected() {
@@ -90,6 +101,7 @@ func guiDisconnected() {
 	mConnect.Show()
 	mConnect.Enable()
 	mDisconnect.Hide()
+	connectionTicker.Stop()
 }
 
 func guiConnecting() {
@@ -127,10 +139,11 @@ func connect() {
 		return
 	}
 
-	systray.SetIcon(icons.Connected)
+	connectionTime = time.Now()
 	nerf.Cfg.Connected = true
 	nerf.Cfg.CurrentEndpoint.RemoteIP = *response.RemoteIP
 	nerf.Cfg.ClientIP = *response.ClientIP
+	guiConnected()
 }
 
 func disconnect() {
@@ -156,6 +169,6 @@ func disconnect() {
 		return
 	}
 
-	systray.SetIcon(icons.Disconnected)
+	guiDisconnected()
 	nerf.Cfg.Connected = false
 }
