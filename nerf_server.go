@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes/empty"
-	google_protobuf "github.com/golang/protobuf/ptypes/empty"
 	"github.com/google/go-github/github"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -116,7 +115,7 @@ func (t *Teams) Sync() {
 }
 
 // Disconnect - notify the server about disconnection
-func (s *Server) Disconnect(ctx context.Context, in *Notify) (*google_protobuf.Empty, error) {
+func (s *Server) Disconnect(ctx context.Context, in *Notify) (*empty.Empty, error) {
 	var err error
 
 	if *in.Login == "" {
@@ -143,13 +142,13 @@ func (s *Server) Connect(ctx context.Context, in *Request) (*Response, error) {
 	client := github.NewClient(oclient)
 	user, _, err := client.Users.Get(context.Background(), "")
 	if err != nil {
-		return nil, fmt.Errorf("failed validate login %s(%s): %s\n", user, *in.Login, err)
+		return nil, fmt.Errorf("failed validate login %s(%s): %s", user, *in.Login, err)
 	}
 
 	userTeams := ServerCfg.Teams.User(*user.Login)
 	if len(userTeams) == 0 {
 		ServerCfg.Logger.Debug("teams not found", zap.String("Login", *user.Login))
-		return nil, fmt.Errorf("No teams founds")
+		return nil, fmt.Errorf("no teams founds")
 	}
 
 	ServerCfg.Login = *user.Login

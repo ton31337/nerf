@@ -8,13 +8,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/empty"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	githuboauth "golang.org/x/oauth2/github"
 	grpc "google.golang.org/grpc"
-
-	"github.com/golang/protobuf/ptypes/empty"
-	google_protobuf "github.com/golang/protobuf/ptypes/empty"
 )
 
 // Cfg is a global configuration for Nerf client
@@ -202,7 +200,7 @@ func (s *Api) Connect(ctx context.Context, in *Request) (*ApiResponse, error) {
 }
 
 // Disconnect used to notify API about initiated disconnect
-func (s *Api) Disconnect(ctx context.Context, in *Notify) (*google_protobuf.Empty, error) {
+func (s *Api) Disconnect(ctx context.Context, in *Notify) (*empty.Empty, error) {
 	var err error
 
 	Cfg.Login = *in.Login
