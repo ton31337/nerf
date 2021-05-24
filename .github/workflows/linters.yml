@@ -20,10 +20,10 @@ jobs:
           go get -u github.com/segmentio/golines
           golines -w ./
       - name: Run go fmt
-        run: go fmt ./...
+        run: test -z "$(go fmt ./...)"
       - name: Run go fix
-        run: go fix ./...
+        run: test -z "$(go fix ./...)"
       - name: Run go mod tidy
-        run: go mod tidy
+        run: test -z "$(go mod tidy ./...)"
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v2
