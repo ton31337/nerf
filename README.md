@@ -40,6 +40,7 @@ export DNS_AUTODISCOVER_ZONE=<dnsZone>         # DNS zone to discover VPN endpoi
 make check                                     # Run linters, formatters, etc.
 make darwin-client                             # For MacOS
 make linux-client                              # For Linux
+make deb                                       # Build Ubuntu/Debian .deb package
 ```
 
 ## Start
