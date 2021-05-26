@@ -1,4 +1,4 @@
-syntax = "proto2";
+syntax = "proto3";
 
 package nerf;
 
@@ -17,31 +17,31 @@ service Server {
 }
 
 message PingRequest {
-    required int64 data = 1;
-    required string login = 2;
+    int64 data = 1;
+    string login = 2;
 }
 
 message PingResponse {
-    required int64 data = 1;
+    int64 data = 1;
 }
 
 message Request {
-    required string login = 1;
-    required string token = 2;
+    string login = 1;
+    string token = 2;
 }
 
 message Response {
-    required string config = 1;
-    required string clientIP = 2;
+    string config = 1;
+    string clientIP = 2;
     repeated string teams = 3;
-    required string lightHouseIP = 4;
+    string lightHouseIP = 4;
 }
 
 message ApiResponse {
-    required string clientIP = 1;
-    required string remoteIP = 2;
+    string clientIP = 1;
+    string remoteIP = 2;
 }
 
 message Notify {
-    required string login = 1;
+    string login = 1;
 }

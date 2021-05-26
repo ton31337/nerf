@@ -69,7 +69,7 @@ func StopApi() {
 	defer conn.Close()
 	client := NewServerClient(conn)
 
-	_, err = client.Disconnect(ctx, &Notify{Login: &Cfg.Login})
+	_, err = client.Disconnect(ctx, &Notify{Login: Cfg.Login})
 	if err != nil {
 		Cfg.Logger.Error(
 			"disconnect",
@@ -127,7 +127,7 @@ func startApi() {
 
 	client := NewServerClient(conn)
 
-	request := &Request{Token: &Cfg.Token, Login: &Cfg.Login}
+	request := &Request{Token: Cfg.Token, Login: Cfg.Login}
 	response, err := client.Connect(ctx, request)
 	if err != nil {
 		Cfg.Logger.Fatal(
@@ -139,18 +139,18 @@ func startApi() {
 	}
 
 	Cfg.Logger.Debug("connected to LightHouse",
-		zap.String("ClientIP", *response.ClientIP),
-		zap.String("LightHouseIP", *response.LightHouseIP),
+		zap.String("ClientIP", response.ClientIP),
+		zap.String("LightHouseIP", response.LightHouseIP),
 		zap.Strings("Teams", response.Teams))
 
-	Cfg.ClientIP = *response.ClientIP
+	Cfg.ClientIP = response.ClientIP
 
 	out, err := os.Create(path.Join(NebulaDir(), "config.yml"))
 	if err != nil {
 		Cfg.Logger.Fatal("can't create Nebula config", zap.Error(err))
 	}
 
-	if _, err := out.WriteString(*response.Config); err != nil {
+	if _, err := out.WriteString(response.Config); err != nil {
 		Cfg.Logger.Fatal("can't write Nebula config", zap.Error(err))
 	}
 	defer out.Close()
@@ -158,7 +158,7 @@ func startApi() {
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt)
 
-	if err := NebulaSetNameServers(&e, []string{*response.LightHouseIP}, true); err != nil {
+	if err := NebulaSetNameServers(&e, []string{response.LightHouseIP}, true); err != nil {
 		Cfg.Logger.Fatal("can't set custom DNS servers", zap.Error(err))
 	}
 
@@ -176,13 +176,13 @@ func startApi() {
 
 func (s *Api) Ping(ctx context.Context, in *PingRequest) (*PingResponse, error) {
 	response := time.Now().Round(time.Millisecond).UnixNano() / 1e6
-	return &PingResponse{Data: &response}, nil
+	return &PingResponse{Data: response}, nil
 }
 
 // Connect used to notify API about initiated connect
 func (s *Api) Connect(ctx context.Context, in *Request) (*ApiResponse, error) {
-	Cfg.Login = *in.Login
-	Cfg.Token = *in.Token
+	Cfg.Login = in.Login
+	Cfg.Token = in.Token
 
 	go startApi()
 
@@ -194,8 +194,8 @@ func (s *Api) Connect(ctx context.Context, in *Request) (*ApiResponse, error) {
 	}
 
 	return &ApiResponse{
-		ClientIP: &Cfg.ClientIP,
-		RemoteIP: &Cfg.CurrentEndpoint.RemoteIP,
+		ClientIP: Cfg.ClientIP,
+		RemoteIP: Cfg.CurrentEndpoint.RemoteIP,
 	}, nil
 }
 
@@ -203,7 +203,7 @@ func (s *Api) Connect(ctx context.Context, in *Request) (*ApiResponse, error) {
 func (s *Api) Disconnect(ctx context.Context, in *Notify) (*empty.Empty, error) {
 	var err error
 
-	Cfg.Login = *in.Login
+	Cfg.Login = in.Login
 
 	go StopApi()
 

@@ -27,7 +27,6 @@ require (
 	golang.org/x/text v0.3.5 // indirect
 	golang.org/x/tools v0.1.0 // indirect
 	google.golang.org/grpc v1.36.0
-	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )

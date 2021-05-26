@@ -102,7 +102,7 @@ func ping() {
 
 	client := nerf.NewApiClient(conn)
 	data := time.Now().UnixNano()
-	request := &nerf.PingRequest{Data: &data, Login: &nerf.Cfg.Login}
+	request := &nerf.PingRequest{Data: data, Login: nerf.Cfg.Login}
 	_, err := client.Ping(ctx, request)
 	if err != nil {
 		nerf.Cfg.Connected = false
@@ -170,7 +170,7 @@ func connect() {
 	defer conn.Close()
 
 	client := nerf.NewApiClient(conn)
-	request := &nerf.Request{Login: &nerf.Cfg.Login, Token: &nerf.Cfg.Token}
+	request := &nerf.Request{Login: nerf.Cfg.Login, Token: nerf.Cfg.Token}
 	response, err := client.Connect(ctx, request)
 	if err != nil {
 		return
@@ -178,8 +178,8 @@ func connect() {
 
 	connectionTime = time.Now()
 	nerf.Cfg.Connected = true
-	nerf.Cfg.CurrentEndpoint.RemoteIP = *response.RemoteIP
-	nerf.Cfg.ClientIP = *response.ClientIP
+	nerf.Cfg.CurrentEndpoint.RemoteIP = response.RemoteIP
+	nerf.Cfg.ClientIP = response.ClientIP
 	guiConnected()
 }
 
@@ -197,7 +197,7 @@ func disconnect() {
 	defer conn.Close()
 
 	client := nerf.NewApiClient(conn)
-	request := &nerf.Notify{Login: &nerf.Cfg.Login}
+	request := &nerf.Notify{Login: nerf.Cfg.Login}
 	_, err = client.Disconnect(ctx, request)
 	if err != nil {
 		guiDisconnected()

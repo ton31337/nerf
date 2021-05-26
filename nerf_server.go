@@ -42,14 +42,14 @@ type Teams struct {
 
 // Ping get timestamp in milliseconds
 func (s *Server) Ping(ctx context.Context, in *PingRequest) (*PingResponse, error) {
-	if *in.Login == "" {
+	if in.Login == "" {
 		return nil, fmt.Errorf("failed gRPC ping request")
 	}
 
-	ServerCfg.Logger.Debug("got ping request", zap.String("Login", *in.Login))
+	ServerCfg.Logger.Debug("got ping request", zap.String("Login", in.Login))
 
 	response := time.Now().Round(time.Millisecond).UnixNano() / 1e6
-	return &PingResponse{Data: &response}, nil
+	return &PingResponse{Data: response}, nil
 }
 
 func (t *Teams) User(login string) []string {
@@ -118,31 +118,31 @@ func (t *Teams) Sync() {
 func (s *Server) Disconnect(ctx context.Context, in *Notify) (*empty.Empty, error) {
 	var err error
 
-	if *in.Login == "" {
+	if in.Login == "" {
 		err = fmt.Errorf("failed gRPC disconnect request")
 	}
 
-	ServerCfg.Logger.Debug("disconnect", zap.String("Login", *in.Login))
+	ServerCfg.Logger.Debug("disconnect", zap.String("Login", in.Login))
 
 	return &empty.Empty{}, err
 }
 
 // Connect - connects to the server which generates config.yml for Nebula
 func (s *Server) Connect(ctx context.Context, in *Request) (*Response, error) {
-	if *in.Login == "" {
+	if in.Login == "" {
 		return nil, fmt.Errorf("failed gRPC certificate request")
 	}
 
-	ServerCfg.Logger.Debug("connect", zap.String("Login", *in.Login))
+	ServerCfg.Logger.Debug("connect", zap.String("Login", in.Login))
 
 	token := &TokenSource{
-		AccessToken: *in.Token,
+		AccessToken: in.Token,
 	}
 	oclient := oauth2.NewClient(context.Background(), token)
 	client := github.NewClient(oclient)
 	user, _, err := client.Users.Get(context.Background(), "")
 	if err != nil {
-		return nil, fmt.Errorf("failed validate login %s(%s): %s", user, *in.Login, err)
+		return nil, fmt.Errorf("failed validate login %s(%s): %s", user, in.Login, err)
 	}
 
 	userTeams := ServerCfg.Teams.User(*user.Login)
@@ -169,9 +169,9 @@ func (s *Server) Connect(ctx context.Context, in *Request) (*Response, error) {
 		zap.Strings("Teams", userTeams))
 
 	return &Response{
-		Config:       &config,
-		ClientIP:     &clientIP,
-		LightHouseIP: &ServerCfg.Nebula.LightHouse.NebulaIP,
+		Config:       config,
+		ClientIP:     clientIP,
+		LightHouseIP: ServerCfg.Nebula.LightHouse.NebulaIP,
 		Teams:        userTeams,
 	}, nil
 }
