@@ -1,0 +1,5 @@
+Package: nerf
+Maintainer: Donatas Abraitis <donatas.abraitis@hostinger.com>
+Version: 1.0.0
+Architecture: amd64
+Description: GUI with authorization via Github Teams for Nebula.

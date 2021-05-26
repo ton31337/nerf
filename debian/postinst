@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -e
+set -x
+
+chown root /opt/nebula/nerf-api
+chmod +s /opt/nebula/nerf-api
+systemctl daemon-reload
+systemctl restart nerf
