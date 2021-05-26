@@ -8,6 +8,7 @@
 *.dll
 *.so
 *.dylib
+/nerf-client*
 /nerf.exe
 /nerf
 /nerf-api

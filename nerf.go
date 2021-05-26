@@ -56,9 +56,9 @@ func probeEndpoint(remoteHost string) int64 {
 
 	client := NewServerClient(conn)
 	data := start.UnixNano()
-	request := &PingRequest{Data: &data, Login: &Cfg.Login}
+	request := &PingRequest{Data: data, Login: Cfg.Login}
 	response, err := client.Ping(ctx, request)
-	if err != nil || *response.Data == 0 {
+	if err != nil || response.Data == 0 {
 		return math.MaxInt64
 	}
 

@@ -27,9 +27,7 @@ check:
 	golines -w ./
 	golangci-lint run
 proto:
-	go build github.com/golang/protobuf/protoc-gen-go
-	PATH="$(PWD):$(PATH)" protoc --go_out=plugins=grpc:. *.proto
-	rm protoc-gen-go
+	protoc --go_out=plugins=grpc:. nerf.proto
 linux-client:
 	@-go build -ldflags "$(LDFLAGS)" -o ./nerf ${NERF_CMD_PATH}
 	@-go build -ldflags "$(LDFLAGS)" -o ./nerf-api ${NERF_API_CMD_PATH}
