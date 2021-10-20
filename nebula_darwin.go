@@ -13,7 +13,7 @@ import (
 )
 
 func nebulaDownloadLink() string {
-	return "https://github.com/hostinger/packages/releases/download/v1.0.0/nebula-1.3.0-darwin-amd64"
+	return "https://github.com/hostinger/packages/releases/download/v1.0.0/nebula-1.4.0-darwin-amd64"
 }
 
 // NebulaDir absolute paths to the directory of Nebula configurations and binaries
