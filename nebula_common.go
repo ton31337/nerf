@@ -153,9 +153,6 @@ func NebulaClientIP() (net.IPNet, error) {
 		return net.IPNet{}, err
 	}
 
-	ServerCfg.Logger.Debug("got IP from Gaidys",
-		zap.Strings("ClientIP", gaidysResponse.IpAddresses))
-
 	// Currently return only IPv4
 	return net.IPNet{
 		IP:   net.ParseIP(gaidysResponse.IpAddresses[0]),
