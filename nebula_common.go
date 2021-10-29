@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -96,7 +97,7 @@ listen:
   host: 0.0.0.0
   port: 4242
 
-local_range: {{ .Subnet }}
+local_range: 172.16.0.0/12
 
 tun:
   disabled: false
@@ -127,7 +128,7 @@ firewall:
 }
 
 // NebulaClientIP returns client's IP from IPAM
-func NebulaClientIP() (string, error) {
+func NebulaClientIP() (net.IPNet, error) {
 	var gaidysResponse GaidysResponse
 	url := ServerCfg.GaidysUrl + "/api/v1/hostname/" + ServerCfg.Login
 
@@ -135,25 +136,31 @@ func NebulaClientIP() (string, error) {
 
 	request, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return "", err
+		return net.IPNet{}, err
 	}
 
 	response, err := httpClient.Do(request)
 	if err != nil {
-		return "", err
+		return net.IPNet{}, err
 	}
 
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return "", err
+		return net.IPNet{}, err
 	}
 
 	if err := json.Unmarshal(body, &gaidysResponse); err != nil {
-		return "", err
+		return net.IPNet{}, err
 	}
 
+	ServerCfg.Logger.Debug("got IP from Gaidys",
+		zap.Strings("ClientIP", gaidysResponse.IpAddresses))
+
 	// Currently return only IPv4
-	return gaidysResponse.IpAddresses[0], nil
+	return net.IPNet{
+		IP:   net.ParseIP(gaidysResponse.IpAddresses[0]),
+		Mask: net.IPv4Mask(255, 240, 0, 0),
+	}, nil
 }
 
 // NebulaGenerateCertificate generate ca.crt, client.crt, client.key for Nebula
@@ -180,14 +187,15 @@ func NebulaGenerateCertificate(userTeams []string) {
 		"-out-key", keyPath,
 		"-ca-crt", "/etc/nebula/certs/ca.crt",
 		"-ca-key", "/etc/nebula/certs/ca.key",
-		"-ip", clientIP+"/12", "-groups", strings.Join(userTeams, ","),
+		"-ip", clientIP.String(), "-groups", strings.Join(userTeams, ","),
 		"-duration", "48h").Run()
 	if err != nil {
 		ServerCfg.Logger.Error(
 			"Can't generate certificate for Nebula",
 			zap.String("Login", ServerCfg.Login),
 			zap.Strings("Teams", userTeams),
-			zap.String("ClientIP", clientIP),
+			zap.String("ClientIP", clientIP.IP.String()),
+			zap.Error(err),
 		)
 	}
 

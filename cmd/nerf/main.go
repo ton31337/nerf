@@ -20,7 +20,7 @@ var connectionTime time.Time
 var connectionTicker *time.Ticker
 
 func grpcConnection() (*grpc.ClientConn, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	connection, err := grpc.DialContext(ctx, UnixSockAddr, grpc.WithInsecure())
@@ -94,7 +94,7 @@ func onReady() {
 }
 
 func ping() {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	conn, _ := grpcConnection()
@@ -160,7 +160,7 @@ func connect() {
 
 	nerf.Auth()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	conn, err := grpcConnection()
@@ -186,7 +186,7 @@ func connect() {
 func disconnect() {
 	connectionTicker.Stop()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	conn, err := grpcConnection()

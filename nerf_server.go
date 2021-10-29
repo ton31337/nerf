@@ -156,7 +156,9 @@ func (s *Server) Connect(ctx context.Context, in *Request) (*Response, error) {
 	ServerCfg.Login = *user.Login
 	clientIP, err := NebulaClientIP()
 	if err != nil {
-		ServerCfg.Logger.Debug("IP address not found in IPAM", zap.String("Login", *user.Login))
+		ServerCfg.Logger.Debug("IP address not found in IPAM",
+			zap.Error(err),
+			zap.String("Login", *user.Login))
 		return nil, fmt.Errorf("no IP address")
 	}
 
@@ -172,12 +174,12 @@ func (s *Server) Connect(ctx context.Context, in *Request) (*Response, error) {
 
 	ServerCfg.Logger.Debug("teams found",
 		zap.String("Login", *user.Login),
-		zap.String("ClientIP", clientIP),
+		zap.String("ClientIP", clientIP.IP.String()),
 		zap.Strings("Teams", userTeams))
 
 	return &Response{
 		Config:       config,
-		ClientIP:     clientIP,
+		ClientIP:     clientIP.IP.String(),
 		LightHouseIP: ServerCfg.Nebula.LightHouse.NebulaIP,
 		Teams:        userTeams,
 	}, nil
