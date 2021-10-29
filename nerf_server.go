@@ -166,6 +166,7 @@ func (s *Server) Connect(ctx context.Context, in *Request) (*Response, error) {
 			"can't generate config for Nebula",
 			zap.String("Login", *user.Login),
 			zap.Strings("Teams", userTeams),
+			zap.Error(err),
 		)
 	}
 
