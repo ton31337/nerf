@@ -81,6 +81,11 @@ func startServer(lightHouse string) {
 
 func main() {
 	lightHouse := flag.String("lighthouse", "", "Set the lighthouse. E.g.: <NebulaIP>:<PublicIP>")
+	gaidysUrl := flag.String(
+		"gaidysUrl",
+		os.Getenv("GAIDYS_URL"),
+		"Set URL for Gaidys service (IPAM)",
+	)
 	logLevel := flag.String(
 		"log-level",
 		"info",
@@ -109,6 +114,7 @@ func main() {
 	}.Build()
 
 	nerf.ServerCfg.Logger = logger
+	nerf.ServerCfg.GaidysUrl = *gaidysUrl
 
 	defer func() {
 		_ = nerf.ServerCfg.Logger.Sync()

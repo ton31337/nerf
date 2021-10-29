@@ -49,6 +49,8 @@ make deb                                       # Build Ubuntu/Debian .deb packag
 
 ```
 Usage of ./nerf-server:
+  -gaidysUrl string
+    	Set URL for Gaidys service (IPAM)
   -help
     	Print command line usage
   -lighthouse string

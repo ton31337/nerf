@@ -59,7 +59,7 @@ func main() {
 		_ = nerf.Cfg.Logger.Sync()
 	}()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	// Check if nerf-api is already running or not.

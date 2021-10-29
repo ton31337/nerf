@@ -51,7 +51,7 @@ type Api struct {
 func StopApi() {
 	Cfg.Logger.Debug("disconnect", zap.String("Login", Cfg.Login))
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if Cfg.NebulaPid == nil {
@@ -89,7 +89,7 @@ func StopApi() {
 }
 
 func startApi() {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if Cfg.NebulaPid != nil {
@@ -116,7 +116,7 @@ func startApi() {
 	conn, err := grpc.DialContext(ctx, Cfg.CurrentEndpoint.RemoteHost+":9000", grpc.WithInsecure())
 	if err != nil {
 		Cfg.Logger.Fatal(
-			"can't connect to gRPC server",
+			"can't create connection to gRPC server",
 			zap.Error(err),
 			zap.String("remoteHost", Cfg.CurrentEndpoint.RemoteHost),
 			zap.String("description", Cfg.CurrentEndpoint.Description),
