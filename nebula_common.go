@@ -129,10 +129,11 @@ firewall:
 // NebulaClientIP returns client's IP from IPAM
 func NebulaClientIP() (string, error) {
 	var gaidysResponse GaidysResponse
+	url := ServerCfg.GaidysUrl + "/api/v1/hostname/" + ServerCfg.Login
 
 	httpClient := &http.Client{}
 
-	request, err := http.NewRequest(http.MethodGet, ServerCfg.GaidysUrl, nil)
+	request, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return "", err
 	}
