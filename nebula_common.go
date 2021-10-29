@@ -2,21 +2,18 @@ package nerf
 
 import (
 	"bytes"
-	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"path"
-	"strconv"
 	"strings"
 	"text/template"
 
 	"github.com/Masterminds/sprig"
-	"github.com/snksoft/crc"
 	"go.uber.org/zap"
 )
 
@@ -37,8 +34,12 @@ type LightHouse struct {
 // Nebula struct to store all the relevant data to generate config.yml for Nebula
 type Nebula struct {
 	Certificate *Certificate
-	Subnet      string
 	LightHouse  *LightHouse
+}
+
+type GaidysResponse struct {
+	Hostname    string
+	IpAddresses []string
 }
 
 // NewCertificate stores ca.crt, client.crt, client.key
@@ -125,41 +126,44 @@ firewall:
 	return generatedConfig.String(), nil
 }
 
-func nebulaIP2Int(ip string) uint32 {
-	var long uint32
-	if err := binary.Read(bytes.NewBuffer(net.ParseIP(ip).To4()), binary.BigEndian, &long); err != nil {
-		Cfg.Logger.Fatal("failed converting Nebula IP to integer", zap.Error(err))
+// NebulaClientIP returns client's IP from IPAM
+func NebulaClientIP() (string, error) {
+	var gaidysResponse GaidysResponse
+
+	httpClient := &http.Client{}
+
+	request, err := http.NewRequest(http.MethodGet, ServerCfg.GaidysUrl, nil)
+	if err != nil {
+		return "", err
 	}
-	return long
-}
 
-func int2NebulaIP(ip int64) string {
-	b0 := strconv.FormatInt((ip>>24)&0xff, 10)
-	b1 := strconv.FormatInt((ip>>16)&0xff, 10)
-	b2 := strconv.FormatInt((ip>>8)&0xff, 10)
-	b3 := strconv.FormatInt((ip & 0xff), 10)
-	return b0 + "." + b1 + "." + b2 + "." + b3
-}
+	response, err := httpClient.Do(request)
+	if err != nil {
+		return "", err
+	}
 
-// NebulaClientIP returns client's IP generated from Github login
-func NebulaClientIP() string {
-	clientIPHash := crc.CalculateCRC(crc.CCITT, []byte(ServerCfg.Login))
-	clientIP := int64(nebulaIP2Int(nebulaSubnet()) + uint32(clientIPHash))
-	return int2NebulaIP(clientIP)
-}
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return "", err
+	}
 
-func nebulaSubnet() string {
-	return strings.Split(ServerCfg.Nebula.Subnet, "/")[0]
-}
+	if err := json.Unmarshal(body, &gaidysResponse); err != nil {
+		return "", err
+	}
 
-func nebulaSubnetLen() string {
-	return strings.Split(ServerCfg.Nebula.Subnet, "/")[1]
+	// Currently return only IPv4
+	return gaidysResponse.IpAddresses[0], nil
 }
 
 // NebulaGenerateCertificate generate ca.crt, client.crt, client.key for Nebula
 func NebulaGenerateCertificate(userTeams []string) {
 	crtPath := "/etc/nebula/certs/" + ServerCfg.Login + ".crt"
 	keyPath := "/etc/nebula/certs/" + ServerCfg.Login + ".key"
+
+	clientIP, err := NebulaClientIP()
+	if err != nil {
+		ServerCfg.Logger.Fatal("failed retrieving client's IP address", zap.Error(err))
+	}
 
 	if _, err := os.Stat(crtPath); err == nil {
 		os.Remove(crtPath)
@@ -169,20 +173,20 @@ func NebulaGenerateCertificate(userTeams []string) {
 		os.Remove(keyPath)
 	}
 
-	err := exec.Command("/usr/local/nebula/nebula-cert",
+	err = exec.Command("/usr/local/nebula/nebula-cert",
 		"sign", "-name", ServerCfg.Login,
 		"-out-crt", crtPath,
 		"-out-key", keyPath,
 		"-ca-crt", "/etc/nebula/certs/ca.crt",
 		"-ca-key", "/etc/nebula/certs/ca.key",
-		"-ip", NebulaClientIP()+"/"+nebulaSubnetLen(), "-groups", strings.Join(userTeams, ","),
+		"-ip", clientIP+"/12", "-groups", strings.Join(userTeams, ","),
 		"-duration", "48h").Run()
 	if err != nil {
 		ServerCfg.Logger.Error(
 			"Can't generate certificate for Nebula",
 			zap.String("Login", ServerCfg.Login),
 			zap.Strings("Teams", userTeams),
-			zap.String("ClientIP", NebulaClientIP()),
+			zap.String("ClientIP", clientIP),
 		)
 	}
 

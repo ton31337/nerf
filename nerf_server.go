@@ -3,6 +3,7 @@ package nerf
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/golang/protobuf/ptypes/empty"
@@ -23,10 +24,11 @@ var OauthOrganization string
 
 // ServerConfig struct to store all the relevant data for a server
 type ServerConfig struct {
-	Logger *zap.Logger
-	Login  string
-	Nebula *Nebula
-	Teams  *Teams
+	Logger    *zap.Logger
+	Login     string
+	Nebula    *Nebula
+	Teams     *Teams
+	GaidysUrl string
 }
 
 // Server interface for Protobuf service
@@ -152,7 +154,11 @@ func (s *Server) Connect(ctx context.Context, in *Request) (*Response, error) {
 	}
 
 	ServerCfg.Login = *user.Login
-	clientIP := NebulaClientIP()
+	clientIP, err := NebulaClientIP()
+	if err != nil {
+		ServerCfg.Logger.Debug("IP address not found in IPAM", zap.String("Login", *user.Login))
+		return nil, fmt.Errorf("no IP address")
+	}
 
 	config, err := NebulaGenerateConfig(userTeams)
 	if err != nil {
@@ -181,7 +187,6 @@ func NewServerConfig() ServerConfig {
 		Logger: &zap.Logger{},
 		Login:  "",
 		Nebula: &Nebula{
-			Subnet:      "172.17.0.0/12",
 			Certificate: &Certificate{},
 			LightHouse:  &LightHouse{},
 		},
@@ -190,5 +195,6 @@ func NewServerConfig() ServerConfig {
 			UpdatedAt: time.Now().Unix() - 24*3600,
 			Mutex:     &NerfMutex{InUse: true},
 		},
+		GaidysUrl: os.Getenv("GAIDYS_URL"),
 	}
 }

@@ -15,7 +15,6 @@ require (
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/mitchellh/copystructure v1.1.1 // indirect
-	github.com/snksoft/crc v1.1.0
 	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/vishvananda/netlink v1.1.0
 	go.uber.org/multierr v1.6.0 // indirect
